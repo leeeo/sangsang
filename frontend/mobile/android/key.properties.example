@@ -1,0 +1,13 @@
+# 릴리스 서명 키 설정 예시 (Android upload keystore).
+# 이 파일을 복사해 android/key.properties 로 만들고 실제 값을 채우세요.
+#   Copy this file to android/key.properties and fill in real values.
+#
+# ⚠️ key.properties 와 *.jks 는 절대 커밋하지 마세요 (.gitignore 처리됨).
+# ⚠️ 키스토어(.jks)와 비밀번호는 안전한 곳에 백업하세요 — 분실하면 앱 업데이트가 영구히 막힙니다.
+#
+# 업로드 키스토어 생성:
+#   keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+storePassword=<키스토어 비밀번호>
+keyPassword=<키 비밀번호>
+keyAlias=upload
+storeFile=../upload-keystore.jks
