@@ -1,0 +1,38 @@
+# 환경 변수 (절대 커밋 금지)
+.env
+*.env
+!*.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+htmlcov/
+.coverage
+
+# Node
+node_modules/
+dist/
+.cache/
+
+# SQLite DB (로컬 개발용)
+*.db
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+uvicorn.log

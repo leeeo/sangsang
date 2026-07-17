@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sangbu
+      POSTGRES_PASSWORD: sangbu_secret
+      POSTGRES_DB: sangbusangjo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sangbu -d sangbusangjo"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg2://sangbu:sangbu_secret@db:5432/sangbusangjo
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      CORS_ORIGINS: '["http://localhost", "http://localhost:3000"]'
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # 개발 시 소스 마운트 (핫 리로드용, 프로덕션에서는 제거)
+      - ./backend:/app
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  admin:
+    build:
+      context: ./frontend/admin-dashboard
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
