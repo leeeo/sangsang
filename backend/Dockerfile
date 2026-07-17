@@ -20,4 +20,5 @@ RUN poetry config virtualenvs.create false \
 COPY . .
 
 # 마이그레이션 후 서버 실행
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# 포트: Railway 등 PaaS는 $PORT를 주입하므로 이를 우선 사용하고, 없으면 8000(로컬)로 폴백
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
