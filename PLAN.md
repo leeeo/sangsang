@@ -31,19 +31,19 @@
 
 ## Phase 2 — 계정 준비
 
-- [x] Google Play Console 등록($25) — **승인 대기 중**
-- [ ] AdMob 계정 생성 (무료, [admob.google.com](https://admob.google.com))
+- [x] Google Play Console 등록($25) — **승인 완료**
+- [x] AdMob 계정 생성 (무료, [admob.google.com](https://admob.google.com))
 
 ## Phase 3 — AdMob 실제 ID 발급/교체 (약 1시간)
 
-- [ ] AdMob에 Android 앱 등록 (패키지 `com.sangbusangjo.mobile`)
-- [ ] 광고 단위 2개 생성: 배너 / 전면(interstitial)
-- [ ] **앱 ID**(~ 형식) 교체: `frontend/mobile/android/app/src/main/AndroidManifest.xml`
-- [ ] **광고 단위 ID**(/ 형식) 2개 교체: `frontend/mobile/lib/monetization/ad_config.dart` 의 `_real...`
-  - 안전장치: 교체 전엔 릴리스에서도 테스트 광고로 폴백 (계정 정지 예방)
+- [x] AdMob에 Android 앱 등록 (앱 이름 `상부상조`)
+- [x] 광고 단위 2개 생성: 배너(`/7971424121`) / 전면(`/4350643231`)
+- [x] **앱 ID** 교체: AndroidManifest.xml (`ca-app-pub-9901401078434900~9591627554`)
+- [x] **광고 단위 ID** 2개 교체: `ad_config.dart` (Android — iOS는 출시 시)
 - [ ] AdMob 콘솔 > 개인정보보호 및 메시지에서 **GDPR 메시지 게시** (앱은 UMP 동의 구현됨)
-- [ ] `website/app-ads.txt` 생성 + 배포, AdMob/스토어 등록정보에 웹사이트 도메인 입력
-- [ ] ⚠️ **절대 자기 광고 클릭 금지** (계정 영구 정지 사유)
+- [x] `app-ads.txt` 배포 — ⚠️ github.io는 Public Suffix라 **루트 도메인**(`leeeo.github.io/app-ads.txt`, 유저 사이트 저장소)에 있어야 크롤링됨. 프로젝트 사이트에도 사본 유지.
+- [ ] 스토어 등록정보의 웹사이트 항목에 `https://leeeo.github.io/sangsang/` 입력 (크롤러가 루트 도메인 추출)
+- [ ] ⚠️ **절대 자기 광고 클릭 금지** (계정 영구 정지 사유) — 실ID 적용된 새 빌드부터 실제 광고 노출됨
 
 ## Phase 4 — 서명 키 준비 (약 30분) → [docs/03](docs/03-android-release.md)
 

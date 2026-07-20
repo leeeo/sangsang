@@ -17,13 +17,13 @@ import 'package:flutter/foundation.dart';
 ///    android/app/src/main/AndroidManifest.xml 에 있습니다. 함께 교체하세요.
 /// ══════════════════════════════════════════════════════════════════════
 abstract final class AdConfig {
-  // ── 실제 ID (TODO: AdMob 발급 후 교체) ───────────────────────────────
+  // ── 실제 ID (Android: AdMob 발급 완료 / iOS: 출시 시 발급) ───────────
   static const String _realBannerAndroid =
-      'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
+      'ca-app-pub-9901401078434900/7971424121';
   static const String _realBannerIos =
       'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
   static const String _realInterstitialAndroid =
-      'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
+      'ca-app-pub-9901401078434900/4350643231';
   static const String _realInterstitialIos =
       'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
 
