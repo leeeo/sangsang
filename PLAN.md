@@ -1,10 +1,10 @@
 # 상부상조 출시 실행 플랜
 
-개발은 완료된 상태입니다. 이 문서는 **지금부터 서버 배포·스토어 출시·운영까지** 남은 일을 순서대로 추적하는 체크리스트입니다. 각 단계의 상세 절차는 (작성 예정인) `docs/`에 연결됩니다.
+> **v1 전략: 로컬 우선(서버 없음) + AdMob 광고** — 가볍게 출시하고, 서버·계정은 향후 도입한다.
+> 앱은 `APP_MODE`(기본 `local`) 플래그로 동작하며, 기존 서버 연동 코드(FastAPI 백엔드 + dio 경로)는
+> 전부 보존되어 `--dart-define=APP_MODE=server` 빌드로 언제든 되살릴 수 있다.
 
 > 사용법: 한 단계씩 진행하며 `[ ]`를 `[x]`로 바꿔 기록하세요. 위에서 아래가 의존성 순서입니다.
->
-> ⚠️ Color Rush(leeeo-fable)와 달리 **상부상조는 서버(백엔드 API)가 필요한 앱**입니다. 스토어 출시·앱 프로덕션 빌드보다 **백엔드 배포가 먼저** 와야 합니다. 또한 광고/인앱결제가 없어 해당 단계는 제외했습니다.
 
 ---
 
@@ -12,134 +12,93 @@
 
 | 영역 | 상태 |
 |---|---|
-| 백엔드 API (FastAPI, 32 tests) | ✅ 완료 |
-| 관리자 웹 (React + Vite) | ✅ 완료 |
-| 모바일 앱 (Flutter, `com.sangbusangjo.mobile` v1.0.0+1) | ✅ 완료 |
-| CI 워크플로 (GitHub Actions) | ✅ 작성됨 (push 후 자동 활성화) |
-| GitHub 업로드 | ✅ 완료 (github.com/leeeo/sangsang) |
-| **백엔드 배포(호스팅)** | ⬜ 미완 ← 스토어보다 먼저 |
-| 프로덕션 Google OAuth | ⬜ 미완 |
-| 개인정보처리방침 + 웹사이트 | ⬜ 미완 (금융·개인정보 앱 필수) |
-| 앱 서명 키 + 스토어 등록 | ⬜ 미완 |
+| 앱: 로컬 모드(SQLite) + 광고(배너/전면) | ✅ 완료 (analyze 0건 · 테스트 12/12 · 릴리스 APK 54.4MB 빌드 검증) |
+| 웹사이트 + 개인정보처리방침(로컬+AdMob 기준) | ✅ 라이브 — [leeeo.github.io/sangsang](https://leeeo.github.io/sangsang/) |
+| CI · Android 서명 배선 · 태그 릴리스 워크플로 | ✅ 완료 |
+| Google Play Console 개발자 계정 | 🔄 등록 완료, 승인 대기 |
+| AdMob 계정 + 실제 광고 ID | ⬜ 미완 (현재 테스트 ID — 교체 전 수익 0) |
+| 업로드 키스토어 + 스토어 등록 | ⬜ 미완 |
 
 ---
 
-## Phase 1 — 로컬 통합 검증 (약 30분)
+## Phase 1 — 로컬 검증 (약 30분)
 
-- [ ] `docker compose up` 으로 db+backend+admin 한 번에 기동 확인
-- [ ] 관리자 웹(`localhost:3000`) 로그인 → 대시보드/사용자/거래/분석 동작
-- [ ] `flutter run` (에뮬레이터) → 회원가입/로그인 → 거래 등록 → 관계 집계 확인
-- [ ] 백엔드 테스트 `cd backend && poetry run pytest` (32개 통과)
+- [ ] 실기기/에뮬레이터에서 `flutter run` (`frontend/mobile`)
+- [ ] 첫 실행: 이름 입력(프로필) → 홈 진입 확인
+- [ ] 기능 QA: 거래 등록 → 홈 요약/최근 거래 반영 → 관계 집계(상대방별 잔액) → 분석(월별/카테고리)
+- [ ] 광고 QA: 홈 하단 **테스트 배너** 노출, 거래 저장 3회째에 전면 광고 (전부 "Test Ad" 라벨이어야 정상)
+- [ ] 앱 재시작 후 데이터 유지 확인 (SQLite 영속성)
 
-## Phase 2 — 계정 준비 (1~2일, 승인 대기 포함)
+## Phase 2 — 계정 준비
 
-- [x] GitHub 계정
-- [ ] 백엔드 호스팅 계정 (호스팅 선택은 Phase 3)
-- [ ] Google Play Console 개발자 등록 ($25, 1회) + 신원 확인
-- [ ] Google Cloud 프로젝트 (OAuth Client ID 발급용, 무료)
-- [ ] (iOS 출시 시) Apple Developer Program ($99/년)
+- [x] Google Play Console 등록($25) — **승인 대기 중**
+- [ ] AdMob 계정 생성 (무료, [admob.google.com](https://admob.google.com))
 
-## Phase 3 — 백엔드 배포 (핵심, 약 반나절)
+## Phase 3 — AdMob 실제 ID 발급/교체 (약 1시간)
 
-⚠️ **스토어 출시·앱 프로덕션 빌드보다 먼저** 완료해야 합니다. 앱이 바라볼 실제 API 주소가 여기서 나옵니다.
+- [ ] AdMob에 Android 앱 등록 (패키지 `com.sangbusangjo.mobile`)
+- [ ] 광고 단위 2개 생성: 배너 / 전면(interstitial)
+- [ ] **앱 ID**(~ 형식) 교체: `frontend/mobile/android/app/src/main/AndroidManifest.xml`
+- [ ] **광고 단위 ID**(/ 형식) 2개 교체: `frontend/mobile/lib/monetization/ad_config.dart` 의 `_real...`
+  - 안전장치: 교체 전엔 릴리스에서도 테스트 광고로 폴백 (계정 정지 예방)
+- [ ] AdMob 콘솔 > 개인정보보호 및 메시지에서 **GDPR 메시지 게시** (앱은 UMP 동의 구현됨)
+- [ ] `website/app-ads.txt` 생성 + 배포, AdMob/스토어 등록정보에 웹사이트 도메인 입력
+- [ ] ⚠️ **절대 자기 광고 클릭 금지** (계정 영구 정지 사유)
 
-- [ ] 호스팅 선택: **[결정 필요]** Railway / Render / Fly.io / Cloud Run / VPS
-- [ ] 관리형 PostgreSQL 프로비저닝 → `DATABASE_URL` 확보
-- [ ] 프로덕션 `SECRET_KEY` 생성(개발용 `.env`와 다른 강한 랜덤값), 호스팅 환경변수로 주입 — **절대 커밋 금지**
-- [ ] `CORS_ORIGINS` 를 실제 도메인으로 설정
-- [ ] `alembic upgrade head` 를 배포 커맨드에 포함
-- [ ] HTTPS 도메인 확인 (예: `https://api.sangsang.app`)
-- [ ] 관리자 계정 생성 `poetry run python scripts/create_superuser.py`
-- [ ] `docker-compose.yml` 의 개발용 소스 볼륨 마운트/`--reload` 는 프로덕션에서 제거
+## Phase 4 — 서명 키 준비 (약 30분) → [docs/03](docs/03-android-release.md)
 
-## Phase 4 — 프로덕션 Google 로그인 (약 1시간 + 검증 대기)
+- [ ] `keytool`로 업로드 키스토어 생성 + **안전한 곳에 백업** (분실 = 업데이트 영구 불가)
+- [ ] `android/key.properties.example` → `key.properties` 복사 후 값 입력
 
-- [ ] Google Cloud Console → OAuth 동의 화면 구성(앱 이름/로고/개인정보 URL)
-- [ ] Android OAuth Client ID 생성 (패키지 `com.sangbusangjo.mobile` + 릴리즈 키 SHA-1)
-- [ ] 백엔드 `GOOGLE_CLIENT_ID` 환경변수 설정 (미설정 시 구글 로그인 503)
-- [ ] 앱 빌드 시 `--dart-define=GOOGLE_CLIENT_ID=...` 주입
+## Phase 5 — 릴리스 빌드
 
-## Phase 5 — 웹사이트 + 개인정보처리방침 배포 (약 1시간) → GitHub Pages
+- [ ] 로컬: `flutter build appbundle --release` → AAB 확인
+  - 로컬 모드가 기본이라 **`--dart-define` 불필요** (API_URL/GOOGLE_CLIENT_ID는 서버 모드 전용)
+- [ ] (선택) CI: GitHub Secrets 4개(`KEYSTORE_BASE64` 등) 등록 → 태그 `v1.0.0` push → 서명 AAB 아티팩트
 
-⚠️ 개인정보처리방침 URL은 Play 심사 **필수값**입니다. 상부상조는 금융/경조사 상대방 정보를 다루므로 처리방침이 특히 중요합니다.
+## Phase 6 — Play Console 제출 (반나절 + 심사 수일)
 
-- [ ] `website/` 제작: index / privacy / terms / support (leeeo-fable `website/` 참고)
-- [ ] 처리방침에 수집 항목(이메일·거래·상대방명), 목적, 보관/파기, 제3자 제공(Google 로그인) 명시
-- [ ] 저장소 Settings > Pages > Source = GitHub Actions
-- [ ] `website-deploy.yml` 워크플로 추가 → 배포 확인 (`https://leeeo.github.io/sangsang/privacy.html`)
+- [ ] (계정 승인 후) 앱 생성 → 설정 마법사
+- [ ] **데이터 안전 양식**: 광고 있음 / 광고 ID 수집=예(제3자 Google AdMob) / 앱 데이터는 기기 저장·서버 수집 없음
+- [ ] 개인정보처리방침 URL: `https://leeeo.github.io/sangsang/privacy.html`
+- [ ] 콘텐츠 등급, 타겟 연령(14세+ 권장)
+- [ ] 스토어 등록정보: 설명 / 아이콘 512px / 그래픽 1024x500 / 스크린샷 2장+
+- [ ] 내부 테스트 트랙 업로드 → 실기기 설치 → 기록/광고 동작 확인
+- [ ] ⚠️ 신규 개인 계정 비공개 테스트 요건(테스터 수/기간) 해당 여부 확인
+- [ ] 프로덕션 제출 → 심사 통과 → **index.html의 Play 스토어 링크 TODO 교체**
 
-## Phase 6 — 앱 프로덕션 빌드 준비 (약 1시간)
+## Phase 7 — 출시 후 운영
 
-- [ ] `keytool` 로 업로드 키스토어 생성 + **안전한 곳에 백업** (분실 = 업데이트 불가)
-- [ ] `android/key.properties` 작성 + `build.gradle.kts` 서명 설정 연결
-- [ ] 프로덕션 주소로 빌드: `flutter build appbundle --release --dart-define=API_URL=https://.../api/v1 --dart-define=GOOGLE_CLIENT_ID=...`
-- [ ] 앱 아이콘/스플래시/이름 최종 확인
+- [ ] AdMob 수익/eCPM 모니터링, 지급 정보(기준 $100) 설정
+- [ ] 리뷰 대응, 크래시 모니터링(Play Console Vitals)
+- [ ] 업데이트 절차: `pubspec.yaml` version `+빌드번호` ↑ → 태그 push → AAB 업로드
 
-## Phase 7 — Android 출시 (반나절 + 심사 수일)
+---
 
-- [ ] Play Console 앱 생성 → 설정 마법사
-- [ ] 데이터 보안 양식(금융정보 수집 여부 정확히 기입), 콘텐츠 등급, 타겟 연령
-- [ ] 개인정보처리방침 URL 입력 (Phase 5)
-- [ ] 스토어 등록정보(설명 / 아이콘 512px / 그래픽 1024x500 / 스크린샷)
-- [ ] 내부 테스트 트랙 업로드 → 실기기 로그인/거래 확인
-- [ ] ⚠️ 신규 개인 개발자 계정 비공개 테스트 요건(테스터 수/기간) 확인
-- [ ] 프로덕션 제출 → 심사 통과
+## 향후 로드맵 (v1.1+)
 
-## Phase 8 — (선택) iOS 출시
-
-- [ ] 경로: Mac 보유(Xcode) / Mac 없음 → Codemagic (월 500분 무료)
-- [ ] 번들 ID 등록 → App Store Connect 앱 생성 → App Privacy 설문 → TestFlight → 심사
-
-## Phase 9 — 릴리즈 자동화 (약 1시간)
-
-- [ ] `android-release.yml` 추가 (태그 `v*` push → 서명 AAB/APK 자동 빌드)
-- [ ] GitHub Secrets: `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`
-- [ ] 백엔드 자동 배포(호스팅사 GitHub 연동 또는 배포 워크플로) 연결
-- [ ] 테스트: `git tag v1.0.1 && git push origin v1.0.1` → Actions 아티팩트 확인
-
-## Phase 10 — 출시 후 운영
-
-- [ ] DB 정기 백업 (사용자 재무 데이터 — 유실 방지)
-- [ ] 에러/가동 모니터링, 백엔드 로그 확인
-- [ ] 업데이트 절차: `pubspec.yaml` 빌드번호 ↑ → 태그 push → AAB 업로드
-- [ ] 문의 대응 채널(support 이메일) 운영
+1. **로컬 백업/내보내기(CSV)** — "앱 삭제 = 데이터 소실" 보완. 우선순위 높음.
+2. **서버 도입** — 기존 FastAPI 백엔드/관리자 웹은 코드 보존됨.
+   - 배포: [docs/01 Railway 가이드](docs/01-backend-deploy-railway.md) 그대로 유효
+   - 앱: `--dart-define=APP_MODE=server` 빌드로 기존 로그인/서버 경로 활성화
+   - 마이그레이션: 로컬 SQLite 스키마가 백엔드 API와 필드 호환 → 로그인 후 업로드 동기화 구현
+   - 프로덕션 Google OAuth(Client ID + SHA-1)도 이 시점에
+3. **유료 전환 옵션** — "광고 제거" IAP (leeeo-fable `iap_manager.dart` 패턴 이식)
 
 ---
 
 ## 절대 잊으면 안 되는 것
 
-1. **프로덕션 SECRET_KEY** 는 개발용 `.env` 와 다른 강한 랜덤값 + 환경변수로만 주입(절대 커밋 금지).
-2. **키스토어(.jks)와 비밀번호 백업** — 분실하면 앱 업데이트가 영구히 막힙니다.
-3. **개인정보처리방침** — 금융/개인정보 취급 앱은 처리방침 없이는 심사 통과 불가.
-4. **DB 백업** — 사용자의 실제 재무·관계 데이터라 유실 시 복구 불가.
+1. **키스토어(.jks)와 비밀번호 백업** — 분실하면 앱 업데이트가 영구히 막힌다.
+2. **광고 ID 교체 없이 출시하면 수익 0원** — 안전장치가 테스트 광고로 폴백시킨다 (`ad_config.dart`).
+3. **자기 광고 클릭 금지** — AdMob 계정 영구 정지 사유.
+4. **앱 삭제 = 데이터 소실** — 처리방침/FAQ에 고지됨. v1.1 백업 기능으로 보완 예정.
 
 ---
 
-## 향후 수익화 (무광고 출시 → 유료 전환)
+## 확정된 결정 기록
 
-**방침**: v1.0은 광고 없는 무료 유틸로 출시한다. 광고 SDK/코드는 넣지 않으며(처리방침에도 "광고 미게재" 명시), 이후 유료 모델로 전환할 수 있다. 상부상조는 이미 백엔드+계정+인증을 갖춰 전환에 유리하다 — 서버측 권한(entitlement) 관리와 구매 영수증 검증이 가능하다.
-
-### 전환 형태 (둘 다 `in_app_purchase` 패키지 하나로 구현)
-- **일회성 결제**: "프리미엄 잠금 해제" 1회 구매 — 구현 난이도 낮음
-- **구독**: 월/연 정기결제 — 반복 수익, 갱신/취소 상태관리 필요
-
-### freemium 경계 (예시, 확정 전)
-- **무료**: 거래 기록, 기본 관계 집계, 기본 분석
-- **프리미엄**: 무제한 관계/거래, 고급 분석(연간 리포트·상대방 상세), 데이터 내보내기(엑셀/CSV), 백업/복원
-
-### 전환 시 작업 (지금은 미구현, 방향만 기록)
-- [ ] 유료/무료 경계(상품) 확정 ← 유일하게 먼저 정할 것
-- [ ] Play Console 인앱상품 또는 구독 등록 + 결제 프로필 설정
-- [ ] 백엔드: `User`에 `is_premium` / `premium_until` 필드(Alembic) + 구매 영수증 검증 엔드포인트 (+구독이면 RTDN 알림)
-- [ ] 앱: `in_app_purchase` 추가 + 페이월 화면 + "구매 복원" + 프리미엄 기능 게이팅
-- [ ] 처리방침에 결제 문구 추가(결제는 Google Play가 처리, 카드정보 미보관)
-
-> 지금 준비 비용 ≈ 0. 구조가 이미 유료 친화적이라, 기능 추가 시 "무엇을 유료로 할지"만 정하면 된다.
-
----
-
-## 확정된 방향
-
-- **백엔드 호스팅**: ✅ Railway ([docs/01](docs/01-backend-deploy-railway.md))
-- **출시 범위**: ✅ Android 먼저 (iOS는 이후)
-- **수익화**: ✅ 무광고 무료 출시 → 향후 유료 전환 (위 "향후 수익화" 참고)
+- **아키텍처**: v1 로컬 우선(서버 없음, 기기 내 SQLite). 서버 코드는 보존, `APP_MODE`로 전환.
+- **수익화**: AdMob 광고 (배너: 홈 하단 / 전면: 거래 저장 3회마다·60초 쿨다운). ~~무광고~~ → 광고로 변경(2026-07-20).
+- **출시 범위**: Android 먼저. iOS는 이후(ATT 구현 필요).
+- **백엔드 호스팅(향후)**: Railway ([docs/01](docs/01-backend-deploy-railway.md)).

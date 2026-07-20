@@ -4,20 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>개인정보처리방침 | Privacy Policy — 상부상조</title>
-  <meta name="description" content="상부상조(Sangbu-Sangjo)의 개인정보처리방침입니다. 계정 정보, 거래 내역 등 수집 항목과 이용 목적, 보관 기간, 제3자 처리위탁, 이용자 권리를 한국어와 영어로 안내합니다.">
+  <meta name="description" content="상부상조(Sangbu-Sangjo)의 개인정보처리방침입니다. 기기 내 저장 데이터, 광고(Google AdMob), 광고 식별자, 이용자 권리에 대한 안내를 한국어와 영어로 제공합니다.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://leeeo.github.io/sangsang/privacy.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="상부상조">
   <meta property="og:title" content="개인정보처리방침 | Privacy Policy — 상부상조">
-  <meta property="og:description" content="상부상조의 개인정보 수집·이용·보관·제3자 처리위탁 관련 정책 안내.">
+  <meta property="og:description" content="상부상조의 기기 내 저장 데이터·광고(AdMob) 관련 정책 안내.">
   <meta name="twitter:card" content="summary">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230B1220'/%3E%3Ccircle cx='23' cy='23' r='13' fill='%233B82F6'/%3E%3Ccircle cx='41' cy='23' r='13' fill='%2322C55E'/%3E%3Ccircle cx='32' cy='42' r='13' fill='%23EAB308'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" as="style" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="style.css">
-  <!-- TODO: 필요 시 여기에 GA4 / Plausible 등 분석 스크립트 태그 삽입 -->
 </head>
 <body>
   <a class="skip-link" href="#main">본문으로 바로가기</a>
@@ -43,21 +42,22 @@
     <div class="container legal-page">
       <div class="legal-header">
         <h1>개인정보처리방침 · Privacy Policy</h1>
-        <p class="legal-header__meta">최종 수정일 / Last updated: 2026-07-17</p>
+        <p class="legal-header__meta">최종 수정일 / Last updated: 2026-07-20</p>
       </div>
 
       <nav class="toc" aria-label="목차">
         <p class="toc__title">목차 / TABLE OF CONTENTS</p>
         <ol>
-          <li><a href="#kr-1">수집하는 개인정보 항목</a></li>
-          <li><a href="#kr-2">개인정보의 수집·이용 목적</a></li>
-          <li><a href="#kr-3">개인정보의 보유 및 이용 기간</a></li>
-          <li><a href="#kr-4">제3자 제공 및 처리위탁</a></li>
-          <li><a href="#kr-5">이용자의 권리와 행사 방법</a></li>
-          <li><a href="#kr-6">개인정보의 안전성 확보 조치</a></li>
+          <li><a href="#kr-1">수집하는 정보 및 수집 주체</a></li>
+          <li><a href="#kr-2">기기 로컬 저장 데이터</a></li>
+          <li><a href="#kr-3">계정 및 서버 수집 여부</a></li>
+          <li><a href="#kr-4">광고 서비스 (Google AdMob)</a></li>
+          <li><a href="#kr-5">광고 식별자 및 위치정보</a></li>
+          <li><a href="#kr-6">유럽 사용자(GDPR/EEA) 동의</a></li>
           <li><a href="#kr-7">아동의 개인정보</a></li>
-          <li><a href="#kr-8">개인정보 보호책임자 및 문의처</a></li>
-          <li><a href="#kr-9">정책 변경</a></li>
+          <li><a href="#kr-8">데이터 삭제 및 이용자 권리</a></li>
+          <li><a href="#kr-9">문의처</a></li>
+          <li><a href="#kr-10">정책 변경</a></li>
           <li><a href="#en-1">English Version</a></li>
         </ol>
       </nav>
@@ -66,54 +66,46 @@
       <div class="lang-block lang-block--ko">
         <span class="lang-block__tag">한국어</span>
         <div class="legal-content">
-          <p>본 개인정보처리방침은 Eojin Lee(이하 "운영자")가 제공하는 모바일 애플리케이션 <strong>상부상조(Sangbu-Sangjo)</strong>(이하 "본 서비스")의 이용과 관련하여, 이용자의 개인정보가 어떻게 수집·이용·보관·보호되는지를 설명합니다. 본 서비스는 이용자가 입력한 경조사비 거래 정보를 저장·집계·분석하기 위해 서버(백엔드)를 운영하며, 관련 데이터는 클라우드 인프라에 저장됩니다.</p>
+          <p>본 개인정보처리방침은 <strong>Eojin Lee</strong>(이하 "운영자")가 제공하는 모바일 애플리케이션 <strong>상부상조(Sangbu-Sangjo)</strong>(이하 "본 앱")의 이용과 관련하여, 이용자의 정보가 어떻게 처리·보호되는지를 설명합니다.</p>
 
-          <h2 id="kr-1">1. 수집하는 개인정보 항목</h2>
-          <p>본 서비스는 회원 가입 및 서비스 제공을 위해 아래와 같은 정보를 수집합니다.</p>
+          <h2 id="kr-1">1. 수집하는 정보 및 수집 주체</h2>
+          <p>운영자는 본 앱을 위한 <strong>별도의 서버를 운영하지 않으며, 이용자로부터 직접 개인정보를 수집하지 않습니다.</strong> 이용자가 입력하는 모든 기록은 이용자의 기기 내부에만 저장됩니다(2조). 다만 본 앱은 광고 게재를 위해 제3자 서비스(Google AdMob)를 이용하며, 해당 서비스가 자체적으로 일부 정보를 수집할 수 있습니다(4~5조).</p>
+
+          <h2 id="kr-2">2. 기기 로컬 저장 데이터</h2>
+          <p>다음 데이터는 <strong>이용자의 기기 내부에만 저장</strong>되며, 운영자의 서버로 전송되지 않습니다.</p>
           <ul>
-            <li><strong>계정 정보</strong>: 이메일 주소, 사용자명(username), 이름(full name), 비밀번호(bcrypt 해시로만 저장되며 평문으로는 보관하지 않습니다), Google 로그인을 이용하는 경우 Google 계정 식별자(google_id)</li>
-            <li><strong>서비스 이용 데이터</strong>: 거래 내역(금액, 유형[수입/지출], 일자, 상대방 이름, 메모, 경조사 유형), 상대방(관계)별로 자동 집계된 주고받은 총액, 이용자가 직접 등록한 사용자 정의 카테고리</li>
+            <li><strong>프로필</strong>: 표시용 이름 (회원가입이 아닌, 인사말 표시 용도)</li>
+            <li><strong>기록 데이터</strong>: 경조사비 거래 내역(금액, 유형, 일자, 상대방 이름, 메모, 경조사 유형), 상대방별 집계, 사용자 정의 카테고리</li>
           </ul>
-          <div class="callout">본 서비스는 광고 식별자(AAID/IDFA), 정밀 위치정보, 결제 카드 정보를 수집하지 않습니다. 인앱 결제 기능이 없으며, 광고도 게재하지 않습니다.</div>
+          <div class="callout">⚠️ 현재 버전은 클라우드 백업을 제공하지 않습니다. <strong>앱을 삭제하면 위 데이터가 함께 삭제되며 복구할 수 없습니다.</strong></div>
 
-          <h2 id="kr-2">2. 개인정보의 수집·이용 목적</h2>
+          <h2 id="kr-3">3. 계정 및 서버 수집 여부</h2>
+          <p>현재 버전의 본 앱은 <strong>회원가입 또는 로그인 기능이 없으며</strong>, 운영자가 운영하는 서버에서 이용자의 개인정보를 수집·저장하지 않습니다. 앱 사용을 위해 이메일, 전화번호 등 개인 식별 정보를 입력할 필요가 없습니다. 향후 서버 연동(백업/동기화 등) 기능이 도입되는 경우, 본 방침을 개정하고 고지한 뒤 적용합니다.</p>
+
+          <h2 id="kr-4">4. 광고 서비스 (Google AdMob)</h2>
+          <p>본 앱은 <strong>Google AdMob</strong>을 통해 배너 및 전면(interstitial) 광고를 게재합니다. 광고 게재, 빈도 제한, 부정 클릭 방지를 위해 Google 및 광고 파트너는 광고 식별자, 대략적인 위치정보(IP 기반), 앱 상호작용 데이터 등을 수집·처리할 수 있습니다. 자세한 내용은 Google의 파트너 정책을 참고하시기 바랍니다: <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">policies.google.com/technologies/partner-sites</a>.</p>
+
+          <h2 id="kr-5">5. 광고 식별자 및 위치정보</h2>
           <ul>
-            <li>경조사비 거래의 기록, 상대방별 자동 집계, 카테고리·월별 분석 등 <strong>핵심 서비스 제공</strong></li>
-            <li>이메일/비밀번호 또는 Google 계정을 통한 <strong>회원 인증 및 계정 보안</strong> 유지</li>
+            <li><strong>광고 식별자</strong>: Android의 광고 ID(AAID)와 같은 기기 식별자가 맞춤형/일반 광고 제공을 위해 사용될 수 있습니다.</li>
+            <li><strong>대략적 위치정보</strong>: IP 주소 기반의 국가/지역 단위 위치정보가 광고 적합성 판단에 사용될 수 있으며, 정밀 GPS 위치는 수집하지 않습니다.</li>
+            <li><strong>앱 상호작용 데이터</strong>: 광고 노출·클릭 등 광고 성과 측정을 위한 데이터가 수집될 수 있습니다.</li>
           </ul>
 
-          <h2 id="kr-3">3. 개인정보의 보유 및 이용 기간</h2>
-          <p>수집한 개인정보는 <strong>서비스를 이용하는 기간 동안 보유·이용</strong>됩니다. 이용자가 회원 탈퇴 또는 데이터 삭제를 요청하는 경우, 운영자는 관련 법령에 특별한 규정이 있는 경우를 제외하고 <strong>지체 없이</strong> 해당 개인정보를 파기합니다.</p>
-
-          <h2 id="kr-4">4. 제3자 제공 및 처리위탁</h2>
-          <p>운영자는 이용자의 개인정보를 <strong>광고나 마케팅 목적으로 제3자에게 제공하지 않습니다.</strong> 다만 서비스 제공을 위해 아래와 같이 개인정보 처리를 위탁하고 있습니다.</p>
-          <ul>
-            <li><strong>Google</strong>: Google 계정을 통한 로그인 인증 처리</li>
-            <li><strong>클라우드 인프라(Railway, PostgreSQL)</strong>: 계정 정보 및 거래 데이터의 저장·처리를 위한 서버·데이터베이스 호스팅</li>
-          </ul>
-
-          <h2 id="kr-5">5. 이용자의 권리와 행사 방법</h2>
-          <p>이용자는 앱 내에서 언제든지 본인의 계정 정보 및 거래 데이터를 <strong>열람, 수정, 삭제</strong>할 수 있습니다. 앱 내에서 처리가 어려운 경우, 아래 문의처를 통해 개인정보 삭제 등을 요청할 수 있으며, 운영자는 본인 확인 후 신속히 처리합니다.</p>
-
-          <h2 id="kr-6">6. 개인정보의 안전성 확보 조치</h2>
-          <ul>
-            <li><strong>전송구간 암호화</strong>: 서버와 앱 간 통신은 HTTPS(TLS)로 암호화됩니다.</li>
-            <li><strong>비밀번호 보호</strong>: 비밀번호는 bcrypt 해시로 암호화되어 저장되며, 운영자를 포함한 누구도 평문 비밀번호를 조회할 수 없습니다.</li>
-            <li><strong>인증 토큰</strong>: 로그인 이후에는 JWT(JSON Web Token) 기반 인증 토큰을 사용해 계정에 접근합니다.</li>
-          </ul>
+          <h2 id="kr-6">6. 유럽 사용자(GDPR/EEA) 동의</h2>
+          <p>유럽경제지역(EEA), 영국, 스위스 이용자에게는 <strong>Google 사용자 메시지 플랫폼(UMP)</strong>을 통한 동의 화면이 표시됩니다. 이용자는 개인 맞춤형 광고 수신 여부를 선택할 수 있으며, 언제든지 동의를 변경·철회할 수 있습니다.</p>
 
           <h2 id="kr-7">7. 아동의 개인정보</h2>
-          <p>본 서비스는 <strong>만 14세 미만 아동을 대상으로 하지 않습니다.</strong> 운영자는 만 14세 미만 아동으로부터 고의로 개인정보를 수집하지 않으며, 이러한 사실을 인지하는 즉시 해당 정보를 삭제하는 등 필요한 조치를 취합니다.</p>
+          <p>본 앱은 <strong>만 14세 미만 아동을 대상으로 하지 않습니다.</strong> 운영자는 만 14세 미만 아동으로부터 고의로 개인정보를 수집하지 않으며, 이러한 사실을 인지하는 즉시 필요한 조치를 취합니다.</p>
 
-          <h2 id="kr-8">8. 개인정보 보호책임자 및 문의처</h2>
-          <p>개인정보 관련 문의, 열람·정정·삭제 요청은 아래 연락처로 접수해 주세요.</p>
-          <ul>
-            <li>담당자: Eojin Lee</li>
-            <li>이메일: lee.eojin87@gmail.com</li>
-          </ul>
+          <h2 id="kr-8">8. 데이터 삭제 및 이용자 권리</h2>
+          <p>이용자는 앱 내에서 언제든지 기록을 수정·삭제할 수 있습니다. 본 앱을 <strong>삭제(제거)</strong>하면 기기에 저장된 모든 데이터가 함께 삭제됩니다. 광고 식별자 관련 처리를 제한하고 싶다면 기기의 설정에서 "광고 개인 최적화 선택 해제"를 이용할 수 있습니다.</p>
 
-          <h2 id="kr-9">9. 정책 변경</h2>
-          <p>본 개인정보처리방침은 법령 또는 서비스 정책 변경에 따라 수정될 수 있습니다. 중요한 변경 사항이 있을 경우 본 페이지 상단의 "최종 수정일"을 갱신하여 고지합니다.</p>
+          <h2 id="kr-9">9. 문의처</h2>
+          <p>개인정보 관련 문의는 아래 이메일로 연락해 주세요: <strong>lee.eojin87@gmail.com</strong></p>
+
+          <h2 id="kr-10">10. 정책 변경</h2>
+          <p>본 개인정보처리방침은 법령, 서비스 정책 또는 광고 파트너 정책 변경에 따라 수정될 수 있습니다. 중요한 변경 사항이 있을 경우 본 페이지 상단의 "최종 수정일"을 갱신하여 고지합니다.</p>
         </div>
       </div>
 
@@ -122,53 +114,46 @@
         <span class="lang-block__tag">ENGLISH</span>
         <div class="legal-content">
           <h2 id="en-1">Privacy Policy</h2>
-          <p>This Privacy Policy explains how Eojin Lee ("we", "us", "the Operator") collects, uses, stores, and protects information in connection with your use of the mobile application <strong>Sangbu-Sangjo (상부상조)</strong> (the "Service"). The Service operates a backend server to store, aggregate, and analyze the celebratory/condolatory gift-money ("gyeongjosabi") transaction data you enter, and this data is stored on cloud infrastructure.</p>
+          <p>This Privacy Policy explains how <strong>Eojin Lee</strong> ("we", "us", "the Operator") handles information in connection with your use of the mobile application <strong>Sangbu-Sangjo (상부상조)</strong> (the "App").</p>
 
-          <h2>1. Personal Information We Collect</h2>
+          <h2>1. Information We Collect and Who Collects It</h2>
+          <p>The Operator does <strong>not operate a backend server</strong> for this App and does not directly collect personal information from users. Everything you enter is stored only on your device (Section 2). However, the App uses a third-party advertising service (Google AdMob), which may independently collect certain data (Sections 4–5).</p>
+
+          <h2>2. Data Stored Locally on Your Device</h2>
+          <p>The following data is stored <strong>only on your device</strong> and is never transmitted to any server operated by the Operator:</p>
           <ul>
-            <li><strong>Account information</strong>: email address, username, full name, password (stored only as a bcrypt hash, never in plain text), and, if you sign in with Google, your Google account identifier (google_id)</li>
-            <li><strong>Service usage data</strong>: transaction records (amount, type [income/expense], date, counterparty name, memo, occasion type), automatically aggregated totals of amounts exchanged per counterparty, and user-defined categories</li>
+            <li><strong>Profile</strong>: a display name (used for greetings — not an account)</li>
+            <li><strong>Records</strong>: gift-money transactions (amount, type, date, counterparty name, memo, occasion type), per-counterparty aggregates, and custom categories</li>
           </ul>
-          <div class="callout">The Service does not collect advertising identifiers (AAID/IDFA), precise location data, or payment card information. There is no in-app purchase feature and no advertising.</div>
+          <div class="callout">⚠️ The current version does not provide cloud backup. <strong>Uninstalling the App permanently deletes this data.</strong></div>
 
-          <h2>2. Purposes of Collection and Use</h2>
+          <h2>3. No Account, No Server-Side Collection</h2>
+          <p>The current version of the App has <strong>no sign-up or login feature</strong>, and the Operator does not operate a server that collects or stores your personal data. If server-based features (backup/sync) are introduced in the future, this policy will be updated and announced before they apply.</p>
+
+          <h2>4. Advertising (Google AdMob)</h2>
+          <p>The App displays banner and interstitial ads through <strong>Google AdMob</strong>. To serve ads, apply frequency capping, and prevent fraud, Google and its advertising partners may collect device advertising identifiers, approximate IP-based location, and app interaction data. For details, see Google's partner policy: <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">policies.google.com/technologies/partner-sites</a>.</p>
+
+          <h2>5. Advertising Identifiers and Location Data</h2>
           <ul>
-            <li>Providing the <strong>core service</strong>: recording gift-money transactions, automatic per-counterparty aggregation, and category/monthly analysis</li>
-            <li><strong>Account authentication and security</strong> via email/password or Google sign-in</li>
+            <li><strong>Advertising identifiers</strong> such as the Android Advertising ID (AAID) may be used for personalized or non-personalized ad delivery.</li>
+            <li><strong>Approximate location</strong> derived from your IP address may be used to determine ad relevance; we do not collect precise GPS location.</li>
+            <li><strong>App interaction data</strong> such as ad impressions and clicks may be collected for ad performance measurement.</li>
           </ul>
 
-          <h2>3. Retention and Deletion Period</h2>
-          <p>Collected personal information is retained <strong>for as long as you use the Service</strong>. If you withdraw your account or request deletion, the Operator will destroy the relevant personal information <strong>without undue delay</strong>, except where retention is required by applicable law.</p>
-
-          <h2>4. Third-Party Disclosure and Processing Entrustment</h2>
-          <p>The Operator does <strong>not</strong> provide your personal information to third parties for advertising or marketing purposes. However, the following processing is entrusted to support the Service:</p>
-          <ul>
-            <li><strong>Google</strong>: authentication when you sign in with your Google account</li>
-            <li><strong>Cloud infrastructure (Railway, PostgreSQL)</strong>: hosting of the server and database used to store and process account and transaction data</li>
-          </ul>
-
-          <h2>5. Your Rights and How to Exercise Them</h2>
-          <p>You may <strong>view, edit, and delete</strong> your account information and transaction data at any time within the app. If an action is not available in-app, you may request access, correction, or deletion through the contact details below, and the Operator will process the request promptly after verifying your identity.</p>
-
-          <h2>6. Data Security Measures</h2>
-          <ul>
-            <li><strong>Encryption in transit</strong>: all communication between the app and server is encrypted via HTTPS (TLS).</li>
-            <li><strong>Password protection</strong>: passwords are stored as bcrypt hashes; no one, including the Operator, can view your plain-text password.</li>
-            <li><strong>Authentication tokens</strong>: account access after login is managed via JWT (JSON Web Token)-based authentication.</li>
-          </ul>
+          <h2>6. GDPR / EEA Consent</h2>
+          <p>Users in the European Economic Area (EEA), the United Kingdom, and Switzerland are presented with a consent form powered by <strong>Google's User Messaging Platform (UMP)</strong>. You may choose whether to receive personalized advertising, and you may change or withdraw your consent at any time.</p>
 
           <h2>7. Children's Privacy</h2>
-          <p>The Service is <strong>not directed at children under the age of 14</strong> (per the age threshold under Korean law). The Operator does not knowingly collect personal information from children under 14, and will delete such information promptly if discovered.</p>
+          <p>The App is <strong>not directed at children under the age of 14</strong> (per the age threshold under Korean law). The Operator does not knowingly collect personal information from children under 14.</p>
 
-          <h2>8. Data Protection Contact</h2>
-          <p>For inquiries regarding personal information, or requests to access, correct, or delete your data, please contact:</p>
-          <ul>
-            <li>Contact person: Eojin Lee</li>
-            <li>Email: lee.eojin87@gmail.com</li>
-          </ul>
+          <h2>8. Data Deletion and Your Rights</h2>
+          <p>You can edit or delete your records in the App at any time. <strong>Uninstalling</strong> the App deletes all locally stored data. To limit ad-identifier-based processing, you may use your device's ad settings (e.g., "Opt out of Ads Personalization").</p>
 
-          <h2>9. Changes to This Policy</h2>
-          <p>This Privacy Policy may be updated to reflect changes in law or our services. Material changes will be reflected by updating the "Last updated" date at the top of this page.</p>
+          <h2>9. Contact</h2>
+          <p>For privacy inquiries, please contact: <strong>lee.eojin87@gmail.com</strong></p>
+
+          <h2>10. Changes to This Policy</h2>
+          <p>This Privacy Policy may be updated to reflect changes in law, our services, or our advertising partners' policies. Material changes will be reflected by updating the "Last updated" date at the top of this page.</p>
         </div>
       </div>
     </div>
