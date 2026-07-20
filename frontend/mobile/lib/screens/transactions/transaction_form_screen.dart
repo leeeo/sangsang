@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../monetization/ads_manager.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
 
@@ -87,6 +90,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('거래가 등록되었습니다'), backgroundColor: Color(0xFF10B981)),
         );
+        // 저장 N회마다 전면 광고 (정책은 AdConfig 참고). pop 이후라 화면 전환을 막지 않는다.
+        unawaited(AdsManager.instance.onTransactionSaved());
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('등록에 실패했습니다'), backgroundColor: Color(0xFFEF4444)),

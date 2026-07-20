@@ -39,10 +39,17 @@ dependencies:
   intl: ^0.20.0
   fl_chart: ^0.68.0
   google_sign_in: ^6.2.0
+  # 로컬 우선 모드 (APP_MODE=local, 기본): 기기 내 SQLite 저장
+  sqflite: ^2.4.0
+  path: ^1.9.0
+  # 수익화: AdMob (배너 + 전면). 단위 ID는 lib/monetization/ad_config.dart
+  google_mobile_ads: ^9.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # LocalStore 단위 테스트용 (데스크톱 VM에서 SQLite 실행)
+  sqflite_common_ffi: ^2.3.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

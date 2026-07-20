@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api_client.dart';
+import '../core/app_config.dart';
+import '../data/local_store.dart';
 import '../models/relationship.dart';
 
 class RelationshipProvider extends ChangeNotifier {
@@ -16,8 +18,15 @@ class RelationshipProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final res = await apiClient.dio.get('/relationships/', queryParameters: {'limit': 50});
-      _items = (res.data as List).map((e) => Relationship.fromJson(e)).toList();
+      final List<dynamic> raw;
+      if (AppConfig.isLocal) {
+        raw = await LocalStore.instance.listRelationships(limit: 50);
+      } else {
+        final res = await apiClient.dio
+            .get('/relationships/', queryParameters: {'limit': 50});
+        raw = res.data as List;
+      }
+      _items = raw.map((e) => Relationship.fromJson(e)).toList();
     } catch (_) {
       _error = '관계 목록을 불러오는데 실패했습니다';
     } finally {
@@ -32,13 +41,23 @@ class RelationshipProvider extends ChangeNotifier {
     String? notes,
   }) async {
     try {
-      final res = await apiClient.dio.post('/relationships/', data: {
-        'counterparty_name': counterpartyName,
-        if (relationshipType != null && relationshipType.isNotEmpty)
-          'relationship_type': relationshipType,
-        if (notes != null && notes.isNotEmpty) 'notes': notes,
-      });
-      _items.insert(0, Relationship.fromJson(res.data));
+      final Map<String, dynamic> raw;
+      if (AppConfig.isLocal) {
+        raw = await LocalStore.instance.createRelationship(
+          counterpartyName: counterpartyName,
+          relationshipType: relationshipType,
+          notes: notes,
+        );
+      } else {
+        final res = await apiClient.dio.post('/relationships/', data: {
+          'counterparty_name': counterpartyName,
+          if (relationshipType != null && relationshipType.isNotEmpty)
+            'relationship_type': relationshipType,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+        });
+        raw = res.data;
+      }
+      _items.insert(0, Relationship.fromJson(raw));
       notifyListeners();
       return true;
     } catch (_) {
@@ -48,11 +67,21 @@ class RelationshipProvider extends ChangeNotifier {
 
   Future<bool> updateRelationship(String id, {String? relationshipType, String? notes}) async {
     try {
-      final res = await apiClient.dio.patch('/relationships/$id', data: {
-        'relationship_type': relationshipType,
-        'notes': notes,
-      });
-      final updated = Relationship.fromJson(res.data);
+      final Map<String, dynamic> raw;
+      if (AppConfig.isLocal) {
+        raw = await LocalStore.instance.updateRelationship(
+          id,
+          relationshipType: relationshipType,
+          notes: notes,
+        );
+      } else {
+        final res = await apiClient.dio.patch('/relationships/$id', data: {
+          'relationship_type': relationshipType,
+          'notes': notes,
+        });
+        raw = res.data;
+      }
+      final updated = Relationship.fromJson(raw);
       final idx = _items.indexWhere((r) => r.id == id);
       if (idx != -1) {
         _items[idx] = updated;

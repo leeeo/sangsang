@@ -1,8 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="mobile"
+        android:label="상부상조"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- AdMob 앱 ID.
+             ★ 지금은 Google 공식 "테스트" 앱 ID입니다. AdMob 콘솔에서 실제 앱을
+             등록한 뒤 실제 앱 ID(ca-app-pub-XXXX~XXXX)로 교체하세요.
+             광고 단위 ID는 lib/monetization/ad_config.dart 에서 교체합니다. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

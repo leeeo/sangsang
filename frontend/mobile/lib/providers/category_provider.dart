@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api_client.dart';
+import '../core/app_config.dart';
+import '../data/local_store.dart';
 import '../models/category.dart';
 
 class CategoryProvider extends ChangeNotifier {
@@ -23,8 +25,14 @@ class CategoryProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final res = await apiClient.dio.get('/categories/');
-      _categories = (res.data as List).map((e) => Category.fromJson(e)).toList();
+      final List<dynamic> raw;
+      if (AppConfig.isLocal) {
+        raw = await LocalStore.instance.listCategories();
+      } else {
+        final res = await apiClient.dio.get('/categories/');
+        raw = res.data as List;
+      }
+      _categories = raw.map((e) => Category.fromJson(e)).toList();
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/app_config.dart';
 import '../../providers/analytics_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../widgets/amount_text.dart';
+import '../../widgets/banner_ad_widget.dart';
 import '../../models/transaction.dart';
 import 'package:intl/intl.dart';
 
@@ -46,10 +48,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_outlined),
-            onPressed: () => context.read<AuthProvider>().logout(),
-          ),
+          // 로컬 모드에는 계정 개념이 없어 로그아웃을 노출하지 않는다 (서버 모드 전용)
+          if (!AppConfig.isLocal)
+            IconButton(
+              icon: const Icon(Icons.logout_outlined),
+              onPressed: () => context.read<AuthProvider>().logout(),
+            ),
         ],
       ),
       body: RefreshIndicator(
@@ -113,6 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+      bottomNavigationBar: const SafeArea(child: BannerAdWidget()),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await Navigator.pushNamed(context, '/transactions/new');

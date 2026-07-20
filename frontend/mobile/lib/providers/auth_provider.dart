@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/api_client.dart';
+import '../core/app_config.dart';
+import '../data/local_store.dart';
 import '../models/user.dart';
 
 // Google OAuth 클라이언트 ID
@@ -94,7 +96,20 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// 로컬 모드 전용: 첫 실행 시 로컬 프로필("계정") 생성.
+  Future<void> createLocalProfile(String name) async {
+    final json = await LocalStore.instance.createProfile(name);
+    _user = User.fromJson(json);
+    notifyListeners();
+  }
+
   Future<void> fetchMe() async {
+    if (AppConfig.isLocal) {
+      final json = await LocalStore.instance.getProfile();
+      _user = json == null ? null : User.fromJson(json);
+      notifyListeners();
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getString('access_token') == null) return;
     try {

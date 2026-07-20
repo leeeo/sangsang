@@ -7,7 +7,10 @@ import 'providers/category_provider.dart';
 import 'providers/analytics_provider.dart';
 import 'providers/relationship_provider.dart';
 import 'core/api_client.dart' show navigatorKey;
+import 'core/app_config.dart';
+import 'monetization/ads_manager.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/auth/profile_setup_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/transactions/transaction_list_screen.dart';
 import 'screens/transactions/transaction_form_screen.dart';
@@ -51,6 +54,7 @@ class SangbuSangjoApp extends StatelessWidget {
       home: const _AppEntryPoint(),
       routes: {
         '/login': (_) => const LoginScreen(),
+        '/setup': (_) => const ProfileSetupScreen(),
         '/home': (_) => const HomeScreen(),
         '/transactions': (_) => const TransactionListScreen(),
         '/transactions/new': (_) => const TransactionFormScreen(),
@@ -73,10 +77,15 @@ class _AppEntryPointState extends State<_AppEntryPoint> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // 광고 초기화 (UMP 동의 → SDK). 실패해도 앱 흐름을 막지 않는다.
+      AdsManager.instance.init();
       final auth = context.read<AuthProvider>();
       await auth.fetchMe();
       if (mounted) {
-        Navigator.pushReplacementNamed(context, auth.isLoggedIn ? '/home' : '/login');
+        // 로컬 모드: 프로필 없으면 최초 설정 화면, 서버 모드: 로그인 화면
+        final entry = AppConfig.isLocal ? '/setup' : '/login';
+        Navigator.pushReplacementNamed(
+            context, auth.isLoggedIn ? '/home' : entry);
       }
     });
   }

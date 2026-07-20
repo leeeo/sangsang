@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api_client.dart';
+import '../core/app_config.dart';
+import '../data/local_store.dart';
 import '../models/transaction.dart';
 
 class TransactionProvider extends ChangeNotifier {
@@ -22,10 +24,18 @@ class TransactionProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final params = <String, dynamic>{'skip': skip, 'limit': limit};
-      if (type != null) params['type'] = type;
-      final res = await apiClient.dio.get('/transactions/', queryParameters: params);
-      final data = TransactionListResponse.fromJson(res.data);
+      final Map<String, dynamic> raw;
+      if (AppConfig.isLocal) {
+        raw = await LocalStore.instance
+            .listTransactions(skip: skip, limit: limit, type: type);
+      } else {
+        final params = <String, dynamic>{'skip': skip, 'limit': limit};
+        if (type != null) params['type'] = type;
+        final res =
+            await apiClient.dio.get('/transactions/', queryParameters: params);
+        raw = res.data;
+      }
+      final data = TransactionListResponse.fromJson(raw);
       _items = data.items;
       _total = data.total;
     } catch (e) {
@@ -46,16 +56,28 @@ class TransactionProvider extends ChangeNotifier {
     String? eventType,
   }) async {
     try {
-      await apiClient.dio.post('/transactions/', data: {
-        'category_id': categoryId,
-        'amount': amount,
-        'type': type,
-        'transaction_date': transactionDate,
-        if (counterpartyName != null && counterpartyName.isNotEmpty)
-          'counterparty_name': counterpartyName,
-        if (memo != null && memo.isNotEmpty) 'memo': memo,
-        if (eventType != null && eventType.isNotEmpty) 'event_type': eventType,
-      });
+      if (AppConfig.isLocal) {
+        await LocalStore.instance.createTransaction(
+          categoryId: categoryId,
+          amount: amount,
+          type: type,
+          transactionDate: transactionDate,
+          counterpartyName: counterpartyName,
+          memo: memo,
+          eventType: eventType,
+        );
+      } else {
+        await apiClient.dio.post('/transactions/', data: {
+          'category_id': categoryId,
+          'amount': amount,
+          'type': type,
+          'transaction_date': transactionDate,
+          if (counterpartyName != null && counterpartyName.isNotEmpty)
+            'counterparty_name': counterpartyName,
+          if (memo != null && memo.isNotEmpty) 'memo': memo,
+          if (eventType != null && eventType.isNotEmpty) 'event_type': eventType,
+        });
+      }
       await fetchTransactions();
       return true;
     } catch (_) {
@@ -65,7 +87,11 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<bool> deleteTransaction(String id) async {
     try {
-      await apiClient.dio.delete('/transactions/$id');
+      if (AppConfig.isLocal) {
+        await LocalStore.instance.deleteTransaction(id);
+      } else {
+        await apiClient.dio.delete('/transactions/$id');
+      }
       _items.removeWhere((t) => t.id == id);
       _total--;
       notifyListeners();
