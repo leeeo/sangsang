@@ -1,13 +1,13 @@
-# Android 릴리즈 빌드 자동화
+# Android 릴리즈 빌드 + Play 자동 업로드
 #
-# 트리거: v로 시작하는 태그 push (예: v1.0.0) 또는 수동 실행
-# 결과물: 서명된 AAB(스토어 업로드용) + APK(직접 설치 테스트용) 아티팩트
+# 트리거: v로 시작하는 태그 push (예: v1.0.1) 또는 수동 실행(workflow_dispatch)
+# 동작: 서명 AAB/APK 빌드 → 아티팩트 업로드 → (시크릿 있으면) Play 트랙 자동 업로드
 #
-# ★ 사전 준비 (docs/03-android-release.md 참고):
-#   Settings > Secrets and variables > Actions 에 등록:
-#   - Secrets: KEYSTORE_BASE64(=base64 upload-keystore.jks), STORE_PASSWORD, KEY_PASSWORD, KEY_ALIAS
-#   - Variables: API_URL(=https://<railway>/api/v1), GOOGLE_CLIENT_ID
-#   (API_URL 미설정 시 앱이 localhost 를 바라봐 프로덕션에서 동작하지 않습니다)
+# ★ 사전 준비:
+#   · 서명 (docs/03): Secrets에 KEYSTORE_BASE64 / STORE_PASSWORD / KEY_PASSWORD / KEY_ALIAS
+#   · Play 자동 업로드 (docs/05): Secret PLAY_SERVICE_ACCOUNT_JSON (GCP 서비스 계정 JSON)
+#       - 이 시크릿이 없으면 업로드 단계는 자동으로 건너뜀 (빌드/아티팩트는 정상 동작)
+#   · v1은 로컬 우선 모드라 API_URL/GOOGLE_CLIENT_ID dart-define 불필요.
 name: Android Release
 
 on:
@@ -21,6 +21,9 @@ jobs:
     defaults:
       run:
         working-directory: frontend/mobile
+    env:
+      # 시크릿을 if 조건에서 직접 못 쓰므로 job-level env로 존재 여부만 평가
+      HAS_PLAY_SA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -50,23 +53,17 @@ jobs:
       - name: 의존성 설치
         run: flutter pub get
 
-      - name: 정적 분석
-        run: flutter analyze
+      - name: 정적 분석 + 테스트
+        run: |
+          flutter analyze
+          flutter test
 
-      - name: 테스트
-        run: flutter test
-
-      - name: AAB 빌드 (Play 스토어 업로드용)
-        run: >
-          flutter build appbundle --release
-          --dart-define=API_URL=${{ vars.API_URL }}
-          --dart-define=GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
-
-      - name: APK 빌드 (직접 설치 테스트용)
-        run: >
-          flutter build apk --release
-          --dart-define=API_URL=${{ vars.API_URL }}
-          --dart-define=GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
+      # versionCode(빌드번호)를 CI 실행번호로 자동 증가 → 매 업로드 고유 보장
+      # (versionName은 pubspec의 1.0.0 유지. 올리려면 pubspec version 수정)
+      - name: AAB + APK 빌드
+        run: |
+          flutter build appbundle --release --build-number=${{ github.run_number }}
+          flutter build apk --release --build-number=${{ github.run_number }}
 
       - name: AAB 아티팩트 업로드
         uses: actions/upload-artifact@v4
@@ -79,3 +76,19 @@ jobs:
         with:
           name: sangsang-apk
           path: frontend/mobile/build/app/outputs/flutter-apk/app-release.apk
+
+      # ── Play 자동 업로드 (PLAY_SERVICE_ACCOUNT_JSON 시크릿 있을 때만 실행) ──
+      #  track: internal(기본, 안전·즉시·최대 100명) — 파이프라인 검증용.
+      #  · 비공개 테스트 트랙에 배포하려면 track 을 해당 트랙 이름으로 변경.
+      #  · 출시 후 프로덕션 배포: track: production
+      #      단계적 출시 원하면 status: inProgress + userFraction: '0.2' (20%)
+      - name: Play 스토어 업로드
+        if: env.HAS_PLAY_SA == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.sangbusangjo.mobile
+          releaseFiles: frontend/mobile/build/app/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+          whatsNewDirectory: frontend/mobile/distribution/whatsnew
