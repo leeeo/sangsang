@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.1.0+1
 
 environment:
   sdk: ^3.11.4
@@ -44,6 +44,10 @@ dependencies:
   path: ^1.9.0
   # 수익화: AdMob (배너 + 전면). 단위 ID는 lib/monetization/ad_config.dart
   google_mobile_ads: ^9.0.0
+  # 백업/내보내기: 파일 저장·공유(내보내기) + 파일 선택(가져오기)
+  share_plus: ^10.0.0
+  file_picker: ^8.1.0
+  path_provider: ^2.1.0
 
 dev_dependencies:
   flutter_test:

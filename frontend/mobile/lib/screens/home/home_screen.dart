@@ -48,6 +48,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.backup_outlined),
+            tooltip: '백업 / 복원',
+            onPressed: () => Navigator.pushNamed(context, '/backup'),
+          ),
           // 로컬 모드에는 계정 개념이 없어 로그아웃을 노출하지 않는다 (서버 모드 전용)
           if (!AppConfig.isLocal)
             IconButton(

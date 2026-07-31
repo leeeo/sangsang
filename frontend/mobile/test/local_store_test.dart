@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart' hide Transaction;
 
@@ -239,6 +241,80 @@ void main() {
       final cat = await store.byCategory();
       expect((cat['categories'] as List), isEmpty);
       expect((cat['total'] as num).toDouble(), 0);
+    });
+  });
+
+  group('백업/복원', () {
+    test('export → jsonEncode/Decode → 새 빈 DB import 라운드트립', () async {
+      await store.createProfile('어진');
+      await store.createTransaction(
+          categoryId: 'sys-01',
+          amount: 100000,
+          type: 'expense',
+          transactionDate: today(),
+          counterpartyName: '김민수',
+          memo: '축의금');
+      await store.createTransaction(
+          categoryId: 'sys-10',
+          amount: 30000,
+          type: 'income',
+          transactionDate: today(),
+          counterpartyName: '김민수');
+      final relId =
+          Relationship.fromJson((await store.listRelationships()).first).id;
+      await store.updateRelationship(relId,
+          relationshipType: 'friend', notes: '동창');
+
+      // 실제 앱 흐름과 동일하게 JSON 직렬화 라운드트립
+      final backup = jsonDecode(jsonEncode(await store.exportBackup()))
+          as Map<String, dynamic>;
+
+      await store.resetForTest(); // 재설치 시뮬레이션 (빈 DB + 시스템 카테고리만)
+      expect((await store.listTransactions())['total'], 0);
+
+      final restored = await store.importBackup(backup);
+      expect(restored, 2);
+
+      expect(User.fromJson((await store.getProfile())!).displayName, '어진');
+      expect((await store.listTransactions())['total'], 2);
+      final rel = Relationship.fromJson((await store.listRelationships()).first);
+      expect(rel.counterpartyName, '김민수');
+      expect(rel.totalGiven, 100000);
+      expect(rel.totalReceived, 30000);
+      expect(rel.relationshipType, 'friend');
+      expect(rel.notes, '동창');
+    });
+
+    test('재-import는 멱등 (거래 중복 안 됨)', () async {
+      await store.createTransaction(
+          categoryId: 'sys-01',
+          amount: 5000,
+          type: 'expense',
+          transactionDate: today());
+      final backup = await store.exportBackup();
+      await store.importBackup(backup);
+      await store.importBackup(backup);
+      expect((await store.listTransactions())['total'], 1);
+    });
+
+    test('상부상조 백업이 아니면 FormatException', () async {
+      expect(() => store.importBackup({'app': 'other'}),
+          throwsA(isA<FormatException>()));
+    });
+
+    test('CSV: 헤더 + 행, 콤마 포함 값은 따옴표 이스케이프', () async {
+      await store.createTransaction(
+          categoryId: 'sys-01',
+          amount: 100000,
+          type: 'expense',
+          transactionDate: '2026-07-21',
+          counterpartyName: '김,민수');
+      final csv = await store.exportTransactionsCsv();
+      final lines = csv.trim().split('\n');
+      expect(lines.first, '날짜,유형,금액,상대방,카테고리,경조사유형,메모');
+      expect(lines.length, 2);
+      expect(lines[1], contains('"김,민수"'));
+      expect(lines[1], contains('지출'));
     });
   });
 }

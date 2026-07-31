@@ -11,6 +11,7 @@ import 'core/app_config.dart';
 import 'monetization/ads_manager.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
+import 'screens/backup/backup_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/transactions/transaction_list_screen.dart';
 import 'screens/transactions/transaction_form_screen.dart';
@@ -60,6 +61,7 @@ class SangbuSangjoApp extends StatelessWidget {
         '/transactions/new': (_) => const TransactionFormScreen(),
         '/relationships': (_) => const RelationshipListScreen(),
         '/analytics': (_) => const AnalyticsScreen(),
+        '/backup': (_) => const BackupScreen(),
       },
     );
   }

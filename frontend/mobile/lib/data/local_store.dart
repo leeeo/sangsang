@@ -446,4 +446,88 @@ class LocalStore {
       'total': grand,
     };
   }
+
+  // ── 백업 / 내보내기 / 가져오기 ─────────────────────────────────────────
+
+  /// 전체 로컬 데이터를 JSON 직렬화 가능한 Map으로 내보낸다 (백업용).
+  /// 사용자 정의 카테고리만 포함(시스템 15종은 DB 생성 시 자동 시드됨).
+  Future<Map<String, dynamic>> exportBackup() async {
+    final db = await _database;
+    return {
+      'app': 'sangbu-sangjo',
+      'schema': 1,
+      'exported_at': _nowIso(),
+      'profile': await db.query('profile'),
+      'categories': await db.query('categories', where: 'is_system = 0'),
+      'transactions': await db.query('transactions'),
+      'relationships': await db.query('relationships'),
+    };
+  }
+
+  /// 백업 Map을 로컬 DB에 복원한다. 반환값 = 복원된 거래 수.
+  /// 멱등: 재설치 후 빈 DB 복원 + 기존 DB 병합 모두 안전.
+  ///   - profile/transactions: id 기준 replace (재-import 시 중복 없음)
+  ///   - categories/relationships: 충돌 시 ignore (기존 항목 유지)
+  Future<int> importBackup(Map<String, dynamic> data) async {
+    if (data['app'] != 'sangbu-sangjo') {
+      throw const FormatException('상부상조 백업 파일이 아닙니다');
+    }
+    final db = await _database;
+    var restored = 0;
+    await db.transaction((txn) async {
+      for (final p in (data['profile'] as List? ?? const [])) {
+        await txn.insert('profile', Map<String, Object?>.from(p as Map),
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      // 카테고리 → 관계 → 거래 순서 (거래의 category_id FK 보장)
+      for (final c in (data['categories'] as List? ?? const [])) {
+        await txn.insert('categories', Map<String, Object?>.from(c as Map),
+            conflictAlgorithm: ConflictAlgorithm.ignore);
+      }
+      for (final r in (data['relationships'] as List? ?? const [])) {
+        await txn.insert('relationships', Map<String, Object?>.from(r as Map),
+            conflictAlgorithm: ConflictAlgorithm.ignore);
+      }
+      for (final t in (data['transactions'] as List? ?? const [])) {
+        await txn.insert('transactions', Map<String, Object?>.from(t as Map),
+            conflictAlgorithm: ConflictAlgorithm.replace);
+        restored++;
+      }
+    });
+    return restored;
+  }
+
+  /// 거래 내역을 CSV 문자열로 내보낸다 (엑셀용, 헤더 한국어).
+  Future<String> exportTransactionsCsv() async {
+    final db = await _database;
+    final rows = await db.rawQuery('''
+      SELECT t.transaction_date, t.type, t.amount, t.counterparty_name,
+             c.name AS category, t.event_type, t.memo
+      FROM transactions t
+      LEFT JOIN categories c ON c.id = t.category_id
+      ORDER BY t.transaction_date DESC, t.created_at DESC
+    ''');
+    final buf = StringBuffer()
+      ..writeln('날짜,유형,금액,상대방,카테고리,경조사유형,메모');
+    for (final r in rows) {
+      buf.writeln([
+        r['transaction_date'],
+        r['type'] == 'income' ? '수입' : '지출',
+        r['amount'],
+        r['counterparty_name'],
+        r['category'],
+        r['event_type'],
+        r['memo'],
+      ].map(_csvCell).join(','));
+    }
+    return buf.toString();
+  }
+
+  static String _csvCell(Object? v) {
+    final s = (v ?? '').toString();
+    if (s.contains(',') || s.contains('"') || s.contains('\n')) {
+      return '"${s.replaceAll('"', '""')}"';
+    }
+    return s;
+  }
 }
