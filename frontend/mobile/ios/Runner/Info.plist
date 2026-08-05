@@ -4,10 +4,15 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- AdMob iOS 앱 ID. 지금은 Google 공식 "테스트" 앱 ID (iOS AdMob 앱 미등록).
+	     이게 없으면 iOS에서 광고 초기화 시 크래시. iOS 정식 출시 때 실제 iOS 앱 ID로 교체하고
+	     lib/monetization/ad_config.dart 의 _realBannerIos/_realInterstitialIos 도 함께 교체하세요. -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Mobile</string>
+	<string>상부상조</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
