@@ -1,0 +1,111 @@
+# iOS 미서명 IPA 빌드 (사이드로드 도그푸딩용)
+#
+# 왜 CI인가: iOS 빌드는 macOS에서만 가능하다. 개발 PC가 Windows라 로컬 빌드가 불가능하고,
+#            이 저장소는 public이므로 GitHub Actions의 macOS 러너를 무료로 쓸 수 있다.
+#
+# 산출물: Payload/Runner.app 을 담은 **미서명** IPA.
+#         Windows의 Sideloadly(또는 AltStore/SideStore)로 본인 Apple ID 서명 후 아이폰에 설치한다.
+#         → 설치 절차: docs/06-ios-sideload.md
+#
+# 배포 방식: 태그 `ios-latest` 의 롤링 프리릴리즈에 항상 같은 파일명으로 올린다.
+#            public 저장소의 릴리즈 자산은 **로그인 없이** 받을 수 있어 아이폰/PC 어디서나 바로 다운로드된다.
+#            고정 URL: https://github.com/leeeo/sangsang/releases/download/ios-latest/sangbusangjo-ios-unsigned.ipa
+#
+# 주의:
+#   · 서명은 하지 않는다(--no-codesign). Apple 유료 계정 없이 CI에서 서명할 방법이 없고,
+#     Sideloadly가 프레임워크까지 전부 재서명하므로 미서명 IPA면 충분하다.
+#   · analyze/test 는 ci.yml 이 같은 push에서 병렬로 돌리므로 여기서 중복 실행하지 않는다.
+#   · iOS AdMob은 아직 테스트 광고 ID다(Info.plist 앱 ID + ad_config.dart 폴백).
+#     실제 광고가 아니므로 도그푸딩 중 광고를 눌러도 계정 정지 위험이 없다.
+name: iOS Unsigned IPA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/mobile/**'
+      - '.github/workflows/ios-release.yml'
+  workflow_dispatch:
+
+# gh release 로 릴리즈를 만들고 자산을 올리려면 쓰기 권한이 필요하다.
+permissions:
+  contents: write
+
+concurrency:
+  group: ios-ipa
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: frontend/mobile
+    env:
+      IPA_NAME: sangbusangjo-ios-unsigned.ipa
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.41.6
+          cache: true
+
+      - name: 의존성 설치
+        run: flutter pub get
+
+      # CFBundleVersion(빌드번호)을 CI 실행번호로 올려 매 빌드를 고유하게 만든다.
+      # → 아이폰에 덮어씌워 설치할 때 iOS가 새 버전으로 인식한다.
+      - name: iOS 릴리스 빌드 (미서명)
+        run: flutter build ios --release --no-codesign --build-number=${{ github.run_number }}
+
+      # Apple의 IPA 규격 = Payload/ 디렉터리에 .app 을 담은 zip.
+      # -y: 심볼릭 링크를 링크 그대로 보존 (프레임워크 구조 보호)
+      - name: IPA 패키징
+        run: |
+          set -euo pipefail
+          cd build/ios/iphoneos
+          test -d Runner.app || { echo "::error::Runner.app 이 없습니다 — 빌드 실패"; exit 1; }
+          mkdir -p Payload
+          mv Runner.app Payload/
+          zip -qry "$GITHUB_WORKSPACE/$IPA_NAME" Payload
+          ls -lh "$GITHUB_WORKSPACE/$IPA_NAME"
+
+      - name: 아티팩트 업로드 (이력 보관용, 90일)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sangsang-ios-ipa
+          path: ${{ env.IPA_NAME }}
+
+      # 롤링 프리릴리즈: 항상 같은 태그/파일명 → 다운로드 URL이 영구 고정된다.
+      # gh CLI는 macOS 러너에 기본 설치돼 있어 서드파티 액션 의존이 없다.
+      - name: ios-latest 릴리즈 갱신
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cat > notes.md <<EOF
+          아이폰 사이드로드용 **미서명** IPA입니다. (Apple 유료 계정 불필요)
+
+          - 커밋: \`${{ github.sha }}\`
+          - 빌드번호(CFBundleVersion): \`${{ github.run_number }}\`
+          - 설치 방법: [docs/06-ios-sideload.md](https://github.com/${{ github.repository }}/blob/main/docs/06-ios-sideload.md)
+
+          Windows에서 Sideloadly로 본인 Apple ID 서명 후 설치하세요.
+          무료 Apple ID로 서명하면 **7일마다 재서명**이 필요합니다.
+          EOF
+
+          if gh release view ios-latest >/dev/null 2>&1; then
+            gh release upload ios-latest "$IPA_NAME" --clobber
+            gh release edit ios-latest --notes-file notes.md --title "iOS 미서명 IPA (최신)" --prerelease
+          else
+            gh release create ios-latest "$IPA_NAME" \
+              --title "iOS 미서명 IPA (최신)" \
+              --notes-file notes.md \
+              --prerelease
+          fi
+
+          echo "다운로드: https://github.com/${{ github.repository }}/releases/download/ios-latest/$IPA_NAME"
