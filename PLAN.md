@@ -18,6 +18,7 @@
 | Google Play Console 개발자 계정 | 🔄 등록 완료, 승인 대기 |
 | AdMob 계정 + 실제 광고 ID | ⬜ 미완 (현재 테스트 ID — 교체 전 수익 0) |
 | 업로드 키스토어 + 스토어 등록 | ⬜ 미완 |
+| iOS 도그푸딩용 미서명 IPA (사이드로드) | ✅ 완료 — CI 빌드 검증(13.2MB, arm64) · [설치 가이드](docs/06-ios-sideload.md) |
 
 ---
 
@@ -81,6 +82,22 @@
 - [ ] AdMob 수익/eCPM 모니터링, 지급 정보(기준 $100) 설정
 - [ ] 리뷰 대응, 크래시 모니터링(Play Console Vitals)
 - [ ] 업데이트 절차: `pubspec.yaml` version `+빌드번호` ↑ → 태그 push → AAB 업로드
+
+---
+
+## iOS — 사이드로드 도그푸딩 (출시 아님)
+
+Play 심사 대기 중 아이폰에서 직접 쓰기 위한 경로. **App Store 출시와는 별개**다.
+
+- [x] [ios-release.yml](.github/workflows/ios-release.yml) — macOS 러너에서 미서명 IPA 빌드 (저장소가 public이라 무료)
+- [x] 롤링 프리릴리즈 `ios-latest` 에 고정 파일명으로 배포 → 인증 없이 받는 영구 URL 확보
+- [x] 빌드 검증: `Payload/Runner.app`, arm64 Mach-O, 번들 ID `com.sangbusangjo.mobile`, 미서명
+- [ ] Sideloadly로 아이폰 설치 → [docs/06](docs/06-ios-sideload.md) (무료 Apple ID: 7일마다 재서명)
+- 코드 수정 후 `frontend/mobile/**` push → 워크플로 자동 실행 → 같은 URL이 최신 빌드로 교체됨
+
+> iOS **정식 출시**에 추가로 필요한 것: Apple Developer Program($99/년), AdMob iOS 앱 등록 + 실제 광고 단위 ID
+> (`ad_config.dart` 의 `_realBannerIos`/`_realInterstitialIos` 와 Info.plist 앱 ID는 현재 테스트 ID),
+> ATT(App Tracking Transparency) 프롬프트 구현(`ads_manager.dart` 에 자리 표시됨) + `NSUserTrackingUsageDescription`.
 
 ---
 
