@@ -19,8 +19,20 @@ Play 심사를 기다리는 동안 **아이폰에서 직접 써보기 위한** �
 
 ## 1. 준비물 (최초 1회, 약 15분)
 
-1. **iTunes**와 **iCloud** — 반드시 [apple.com](https://www.apple.com/itunes/download/) 에서 받은 데스크톱 버전. **Microsoft Store 버전은 동작하지 않습니다** (Sideloadly가 요구하는 드라이버가 빠져 있음).
-2. **Sideloadly** — [sideloadly.io](https://sideloadly.io) 에서 Windows용 다운로드 후 설치.
+winget으로 한 번에 깔 수 있습니다. **iCloud만 관리자 권한(UAC)이 필요**합니다.
+
+```powershell
+winget install --id Apple.iTunes                    # Apple Application Support 포함
+winget install --id Apple.AppleMobileDeviceSupport  # ★ iTunes가 안 깔아주는 경우가 있음 - 별도 설치 필수
+winget install --id iOSGods.Sideloadly
+# iCloud는 무인설치가 권한 부족(1603)으로 실패하므로 관리자 권한으로 직접 실행
+Start-Process "$env:TEMP\iCloudSetup.exe" -Verb RunAs -Wait -ArgumentList "/quiet","/norestart"
+```
+
+1. **iTunes**와 **iCloud** — 반드시 [apple.com](https://www.apple.com/itunes/download/) 에서 받은 데스크톱 버전(winget의 `Apple.iTunes` / `Apple.iCloud` 가 이 버전입니다). **Microsoft Store 버전은 동작하지 않습니다.**
+   - 설치 확인: `Get-Service Apple*` 에 **Apple Mobile Device Service** 가 `Running` 이어야 아이폰이 USB로 잡힙니다.
+   - Apple ID 인증에는 iCloud의 `C:\Program Files (x86)\Common Files\Apple\Internet Services\AOSKit.dll` 이 필요합니다.
+2. **Sideloadly** — 설치 경로는 `%LOCALAPPDATA%\Sideloadly\sideloadly.exe` 입니다.
 3. **USB 케이블** + 아이폰. 연결 후 아이폰에 뜨는 **"이 컴퓨터를 신뢰하시겠습니까?"** → 신뢰.
 4. **Apple ID** — 본인 계정. 2단계 인증이 켜져 있으면 설치 중 인증 코드를 물어봅니다.
 
@@ -36,11 +48,15 @@ https://github.com/leeeo/sangsang/releases/download/ios-latest/sangbusangjo-ios-
 
 ## 3. 서명 + 설치 (약 3분)
 
-1. Sideloadly 실행 → 아이폰이 상단에 인식됐는지 확인
-2. **IPA** 칸에 내려받은 `.ipa` 파일을 드래그
-3. **Apple Account** 칸에 본인 Apple ID 입력
+1. Sideloadly 실행 → `iDevice:` 칸에 아이폰이 잡혔는지 확인
+2. 왼쪽 칸에 내려받은 `.ipa` 파일을 드래그 (또는 `sideloadly.exe "경로\앱.ipa"` 로 실행하면 자동 로드)
+3. **Apple ID** 칸에 본인 Apple ID 입력
 4. **Start** → 비밀번호(+2단계 인증 코드) 입력
 5. 진행바가 `Done` 이 되면 홈 화면에 **상부상조** 아이콘 생성
+
+> ⚠️ **첫 실행은 반드시 "관리자 권한으로 실행"** 하세요. 그냥 실행하면
+> `Sideloadly needs administrator permission in order to setup local anisette (CoreFP key: Access is denied)`
+> 경고가 뜨고 Apple ID 로그인이 실패합니다. anisette 키 생성은 **최초 1회만** 관리자 권한이 필요하고, 이후엔 일반 실행으로 충분합니다.
 
 ## 4. 개발자 신뢰 (최초 1회)
 
