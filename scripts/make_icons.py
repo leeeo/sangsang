@@ -2,6 +2,7 @@
 
 생성물:
   - frontend/mobile/android/app/src/main/res/mipmap-*/ic_launcher.png (5종)
+  - frontend/mobile/ios/.../AppIcon.appiconset/Icon-App-*.png         (15종)
   - store_assets/icon-512.png            (Play 스토어 아이콘, 512x512)
   - store_assets/feature-1024x500.png    (Play 피처 그래픽)
 
@@ -18,7 +19,30 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RES = os.path.join(ROOT, "frontend", "mobile", "android", "app", "src", "main", "res")
+IOS_SET = os.path.join(
+    ROOT, "frontend", "mobile", "ios", "Runner",
+    "Assets.xcassets", "AppIcon.appiconset")
 OUT = os.path.join(ROOT, "store_assets")
+
+# AppIcon.appiconset/Contents.json 이 참조하는 파일명 → 실제 픽셀 크기.
+# (size × scale. 20x20@3x = 60px 처럼 이름과 크기가 다르니 주의)
+IOS_ICONS = {
+    "Icon-App-20x20@1x.png": 20,
+    "Icon-App-20x20@2x.png": 40,
+    "Icon-App-20x20@3x.png": 60,
+    "Icon-App-29x29@1x.png": 29,
+    "Icon-App-29x29@2x.png": 58,
+    "Icon-App-29x29@3x.png": 87,
+    "Icon-App-40x40@1x.png": 40,
+    "Icon-App-40x40@2x.png": 80,
+    "Icon-App-40x40@3x.png": 120,
+    "Icon-App-60x60@2x.png": 120,
+    "Icon-App-60x60@3x.png": 180,
+    "Icon-App-76x76@1x.png": 76,
+    "Icon-App-76x76@2x.png": 152,
+    "Icon-App-83.5x83.5@2x.png": 167,
+    "Icon-App-1024x1024@1x.png": 1024,
+}
 
 INDIGO = (99, 102, 241)    # #6366F1
 VIOLET = (139, 92, 246)    # #8B5CF6
@@ -86,6 +110,20 @@ def make_icon(size: int) -> Image.Image:
     return canvas.resize((size, size), Image.LANCZOS)
 
 
+def make_ios_master(size: int = 2048) -> Image.Image:
+    """iOS 런처 아이콘 마스터. Android용 `make_icon` 과 두 군데가 다르다.
+
+    1) 라운드 마스크를 씌우지 않는다 — iOS가 시스템 차원에서 슈퍼타원으로 깎기 때문에
+       미리 둥글리면 이중으로 깎여 모서리가 비어 보인다.
+    2) 알파 채널을 제거한다 — 투명도가 있으면 App Store 업로드가 거부되고,
+       기기에서도 뒷배경이 검게 비친다.
+    """
+    base = _gradient(size, size, INDIGO, VIOLET).convert("RGBA")
+    layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    _envelope(ImageDraw.Draw(layer), size / 2, size * 0.47, size * 0.62)
+    return Image.alpha_composite(base, layer).convert("RGB")
+
+
 def make_feature() -> Image.Image:
     """1024x500 피처 그래픽 (2x 슈퍼샘플)."""
     w, h = 2048, 1000
@@ -121,6 +159,12 @@ def main() -> None:
     # 3) 피처 그래픽 1024x500
     make_feature().convert("RGB").save(os.path.join(OUT, "feature-1024x500.png"))
     print(f"[ok] store_assets/feature-1024x500.png")
+
+    # 4) iOS 런처 아이콘 (Flutter 기본 템플릿 교체). 마스터 1장을 축소해 15종 생성.
+    master = make_ios_master()
+    for name, px in IOS_ICONS.items():
+        master.resize((px, px), Image.LANCZOS).save(os.path.join(IOS_SET, name))
+        print(f"[ok] ios/{name} ({px}px)")
 
 
 if __name__ == "__main__":
