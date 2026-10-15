@@ -17,6 +17,8 @@ ssh leeeo@100.80.181.92 "cd ~/apps/sangsang-web && docker compose up -d && docke
 
 롤백은 VM에서 `html.old`를 `html`로 되돌린다.
 
+캐시: `nginx.conf`는 정적 파일에 7일 캐시를 주고 Cloudflare가 그대로 엣지에 든다. `main.dart.js`는 이름이 고정이라 `web/flutter_bootstrap.js`가 빌드마다 바놀는 `?v=<서비스워커 버전>`을 붙여 로드한다(10-15 추가, 그 전 배포는 엣지에 7일간 예전 파일이 남았다). `canvaskit/`는 Flutter SDK를 올릴 때만 바뀜니 그때는 Cloudflare 대시보드에서 캐시를 비운다.
+
 ## 웹판 차이
 
 - 광고(AdMob)는 웹에서 동작하지 않는다(코드가 웹에서 no-op).
