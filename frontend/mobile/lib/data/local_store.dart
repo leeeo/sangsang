@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
+import 'web_db_factory.dart';
+
 /// 로컬 우선 모드(APP_MODE=local)의 데이터 저장소 (기기 내 SQLite).
 ///
 /// 모든 메서드는 **백엔드 API 응답과 동일한 JSON 형태(Map)** 를 반환한다.
@@ -35,6 +37,17 @@ class LocalStore {
   }
 
   Future<Database> _open() async {
+    final webFactory = webDatabaseFactory();
+    if (webFactory != null && overridePathForTest == null) {
+      return webFactory.openDatabase(
+        _dbName,
+        options: OpenDatabaseOptions(
+          version: 1,
+          onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
+          onCreate: _onCreate,
+        ),
+      );
+    }
     final path = overridePathForTest ?? p.join(await getDatabasesPath(), _dbName);
     return openDatabase(
       path,

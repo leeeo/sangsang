@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../core/file_download.dart';
 import '../../data/local_store.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_shell.dart';
@@ -43,6 +45,12 @@ class _BackupScreenState extends State<BackupScreen> {
     setState(() => _busy = true);
     try {
       final data = await LocalStore.instance.exportBackup();
+      if (kIsWeb) {
+        downloadTextFile('sangsang-backup-${_todayStamp()}.json',
+            const JsonEncoder.withIndent('  ').convert(data), 'application/json');
+        _snack('백업 파일을 내려받았습니다. 안전한 곳에 보관하세요.');
+        return;
+      }
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/sangsang-backup-${_todayStamp()}.json');
       await file.writeAsString(const JsonEncoder.withIndent('  ').convert(data));
@@ -63,6 +71,10 @@ class _BackupScreenState extends State<BackupScreen> {
     setState(() => _busy = true);
     try {
       final csv = await LocalStore.instance.exportTransactionsCsv();
+      if (kIsWeb) {
+        downloadTextFile('sangsang-거래내역-${_todayStamp()}.csv', '\uFEFF$csv', 'text/csv;charset=utf-8');
+        return;
+      }
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/sangsang-마음기록-${_todayStamp()}.csv');
       // BOM 추가 → 엑셀이 한글을 깨짐 없이 인식
@@ -83,9 +95,11 @@ class _BackupScreenState extends State<BackupScreen> {
     final picked = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['json'],
+      withData: kIsWeb,
     );
-    final path = picked?.files.single.path;
-    if (path == null || !mounted) return;
+    final file = picked?.files.single;
+    // 웹은 경로가 없고 내용(bytes)만 온다.
+    if (file == null || (kIsWeb ? file.bytes == null : file.path == null) || !mounted) return;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -113,7 +127,7 @@ class _BackupScreenState extends State<BackupScreen> {
     final navigator = Navigator.of(context);
     setState(() => _busy = true);
     try {
-      final content = await File(path).readAsString();
+      final content = kIsWeb ? utf8.decode(file.bytes!) : await File(file.path!).readAsString();
       final data = jsonDecode(content) as Map<String, dynamic>;
       final count = await LocalStore.instance.importBackup(data);
       await auth.fetchMe();

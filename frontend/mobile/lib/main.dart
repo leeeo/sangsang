@@ -54,6 +54,10 @@ class SangbuSangjoApp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('ko', 'KR')],
       home: const _AppEntryPoint(),
+      // 웹 새로고침 시 주소(/home 등)와 관계없이 진입점부터 시작해 불필요한 '뒤로'를 막는다.
+      onGenerateInitialRoutes: (_) => [
+        MaterialPageRoute(builder: (_) => const _AppEntryPoint()),
+      ],
       routes: {
         '/login': (_) => const LoginScreen(),
         '/setup': (_) => const ProfileSetupScreen(),

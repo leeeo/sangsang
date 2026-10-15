@@ -1,0 +1,2 @@
+frontend/mobile/deploy/** text eol=lf
+*.wasm binary
