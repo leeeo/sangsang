@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import '../../providers/transaction_provider.dart';
-import '../../providers/category_provider.dart';
 import '../../models/transaction.dart';
+import '../../providers/category_provider.dart';
+import '../../providers/transaction_provider.dart';
 import '../../widgets/amount_text.dart';
+import '../../widgets/app_shell.dart';
+import '../../widgets/record_tile.dart';
+import 'transaction_form_screen.dart';
 
 class TransactionListScreen extends StatefulWidget {
   const TransactionListScreen({super.key});
@@ -13,226 +15,157 @@ class TransactionListScreen extends StatefulWidget {
   State<TransactionListScreen> createState() => _TransactionListScreenState();
 }
 
-class _TransactionListScreenState extends State<TransactionListScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _TransactionListScreenState extends State<TransactionListScreen> {
+  String _selected = 'all';
+  String? _deletingId;
+  bool _categoryError = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TransactionProvider>().fetchTransactions();
-      context.read<CategoryProvider>().fetchCategories();
-    });
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging) return;
-      final types = [null, 'expense', 'income'];
-      context.read<TransactionProvider>().fetchTransactions(
-            type: types[_tabController.index],
-          );
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reload());
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final txProvider = context.watch<TransactionProvider>();
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF6366F1),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: const Text('거래 내역', style: TextStyle(fontWeight: FontWeight.bold)),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white60,
-          tabs: const [
-            Tab(text: '전체'),
-            Tab(text: '지출'),
-            Tab(text: '수입'),
-          ],
-        ),
-      ),
-      body: txProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : txProvider.items.isEmpty
-              ? _EmptyState()
-              : RefreshIndicator(
-                  onRefresh: () => txProvider.fetchTransactions(),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: txProvider.items.length,
-                    itemBuilder: (ctx, i) => _TransactionCard(
-                      tx: txProvider.items[i],
-                      onDelete: () {
-                        final id = txProvider.items[i].id;
-                        txProvider.deleteTransaction(id).then((ok) {
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text(ok ? '삭제되었습니다' : '삭제에 실패했습니다'),
-                          ));
-                        });
-                      },
-                    ),
-                  ),
-                ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.pushNamed(context, '/transactions/new')
-            .then((_) => txProvider.fetchTransactions()),
-        backgroundColor: const Color(0xFF6366F1),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-    );
-  }
-}
-
-class _TransactionCard extends StatelessWidget {
-  final Transaction tx;
-  final VoidCallback onDelete;
-  const _TransactionCard({required this.tx, required this.onDelete});
-
-  @override
-  Widget build(BuildContext context) {
-    final catName = context.read<CategoryProvider>().nameById(tx.categoryId);
-
-    return Dismissible(
-      key: Key(tx.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(color: const Color(0xFFEF4444), borderRadius: BorderRadius.circular(14)),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
-      ),
-      confirmDismiss: (_) async {
-        return await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('삭제 확인'),
-            content: const Text('이 거래를 삭제하시겠습니까?'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('삭제', style: TextStyle(color: Colors.red))),
-            ],
-          ),
-        );
-      },
-      onDismissed: (_) => onDelete.call(),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 8, offset: const Offset(0, 2))],
-        ),
-        child: Row(
-          children: [
-            // 아이콘
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: tx.isExpense ? const Color(0xFFFEE2E2) : const Color(0xFFDCFCE7),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Center(
-                child: Text(
-                  _eventIcon(tx.eventType),
-                  style: const TextStyle(fontSize: 22),
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            // 정보
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tx.counterpartyName ?? catName,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(catName, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        DateFormat('MM.dd').format(tx.transactionDate),
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                  if (tx.memo != null && tx.memo!.isNotEmpty) ...[
-                    const SizedBox(height: 3),
-                    Text(tx.memo!, style: const TextStyle(fontSize: 12, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  ],
-                ],
-              ),
-            ),
-            AmountText(amount: tx.amount, isExpense: tx.isExpense, fontSize: 15),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _eventIcon(String? eventType) {
-    switch (eventType) {
-      case 'wedding': return '💍';
-      case 'funeral': return '🕯️';
-      case 'birthday': return '🎂';
-      case 'baby': return '👶';
-      case 'housewarming': return '🏠';
-      default: return '💸';
+  Future<void> _reload() async {
+    setState(() => _categoryError = false);
+    try {
+      await Future.wait([
+        context.read<TransactionProvider>().fetchTransactions(type: _selected == 'all' ? null : _selected),
+        context.read<CategoryProvider>().fetchCategories(),
+      ]);
+    } catch (_) {
+      if (mounted) setState(() => _categoryError = true);
     }
   }
-}
 
-class _EmptyState extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          const Text('거래 내역이 없습니다', style: TextStyle(color: Colors.grey, fontSize: 16)),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pushNamed(context, '/transactions/new'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6366F1),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            icon: const Icon(Icons.add),
-            label: const Text('거래 등록'),
+  Future<void> _addRecord() async {
+    await Navigator.push<void>(context, MaterialPageRoute(builder: (_) => TransactionFormScreen(
+      initialType: _selected == 'all' ? 'expense' : _selected,
+    )));
+    if (mounted) await _reload();
+  }
+
+  Future<void> _delete(Transaction record) async {
+    final colors = Theme.of(context).colorScheme;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('이 기록을 지울까요?'),
+        content: Text('${record.counterpartyName ?? '이름 없이 남긴 기록'} · '
+            '${formatKRW(record.amount)}\n삭제한 기록은 되돌릴 수 없어요.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('남겨두기')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: colors.error, foregroundColor: colors.onError),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('기록 삭제'),
           ),
         ],
       ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _deletingId = record.id);
+    final ok = await context.read<TransactionProvider>().deleteTransaction(record.id);
+    if (!mounted) return;
+    setState(() => _deletingId = null);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(ok ? '기록을 삭제했어요.' : '삭제하지 못했어요. 기록은 그대로 있으니 다시 시도해 주세요.'),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final records = context.watch<TransactionProvider>();
+    final colors = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: const Text('주고받은 기록')),
+      body: PageBody(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('그날의 마음을 차곡차곡 모아두세요.',
+                      style: TextStyle(color: colors.onSurfaceVariant, fontSize: 15)),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: const [('all', '전체'), ('expense', '보낸 마음'), ('income', '받은 마음')]
+                        .map((item) => ChoiceChip(
+                          key: ValueKey('filter-${item.$1}'),
+                          label: Text(item.$2),
+                          selected: _selected == item.$1,
+                          onSelected: (_) {
+                            if (_selected == item.$1) return;
+                            setState(() => _selected = item.$1);
+                            _reload();
+                          },
+                        )).toList(),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(records.isLoading ? '기록을 불러오는 중' : '기록 ${records.total}건',
+                      style: TextStyle(fontSize: 14, color: colors.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: records.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _categoryError
+                      ? AppErrorState(message: '분류 정보를 불러오지 못했어요.', onRetry: _reload)
+                      : records.error != null && records.items.isEmpty
+                      ? AppErrorState(message: records.error!, onRetry: _reload)
+                      : RefreshIndicator(
+                          onRefresh: _reload,
+                          child: ListView(
+                            key: const ValueKey('record-list'),
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                            children: [
+                              if (records.items.isEmpty)
+                                AppEmptyState(
+                                  icon: Icons.history_outlined,
+                                  title: _selected == 'all' ? '아직 남긴 기록이 없어요' : '이 방향의 기록은 아직 없어요',
+                                  message: '축하와 위로를 전한 날을 기억해 두세요.',
+                                  actionLabel: '마음 기록',
+                                  onAction: _addRecord,
+                                ),
+                              ...records.items.map((record) => RecordTile(
+                                key: ValueKey(record.id),
+                                record: record,
+                                onDelete: _deletingId == record.id ? null : () => _delete(record),
+                              )),
+                              if (records.error != null && records.items.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Text(records.error!, style: TextStyle(color: colors.error)),
+                                ),
+                              if (records.isLoadingMore)
+                                const Center(child: CircularProgressIndicator())
+                              else if (records.hasMore)
+                                OutlinedButton(
+                                  key: const ValueKey('load-more-records'),
+                                  onPressed: records.loadMore,
+                                  child: Text('이전 기록 더 보기 (${records.items.length}/${records.total})'),
+                                ),
+                            ],
+                          ),
+                        ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: records.items.isEmpty ? null : FloatingActionButton.extended(
+        key: const ValueKey('list-add-record'),
+        onPressed: _addRecord,
+        icon: const Icon(Icons.add),
+        label: const Text('마음 기록'),
+      ),
+      bottomNavigationBar: const AppNavigation(index: 1),
     );
   }
 }

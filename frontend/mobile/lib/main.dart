@@ -8,6 +8,9 @@ import 'providers/analytics_provider.dart';
 import 'providers/relationship_provider.dart';
 import 'core/api_client.dart' show navigatorKey;
 import 'core/app_config.dart';
+import 'core/app_theme.dart';
+import 'widgets/app_shell.dart';
+import 'widgets/delayed_spinner.dart';
 import 'monetization/ads_manager.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
@@ -42,10 +45,8 @@ class SangbuSangjoApp extends StatelessWidget {
       title: '상부상조',
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6366F1)),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -75,12 +76,21 @@ class _AppEntryPoint extends StatefulWidget {
 }
 
 class _AppEntryPointState extends State<_AppEntryPoint> {
+  String? _error;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       // 광고 초기화 (UMP 동의 → SDK). 실패해도 앱 흐름을 막지 않는다.
       AdsManager.instance.init();
+      _openRecords();
+    });
+  }
+
+  Future<void> _openRecords() async {
+    setState(() => _error = null);
+    try {
       final auth = context.read<AuthProvider>();
       await auth.fetchMe();
       if (mounted) {
@@ -89,12 +99,27 @@ class _AppEntryPointState extends State<_AppEntryPoint> {
         Navigator.pushReplacementNamed(
             context, auth.isLoggedIn ? '/home' : entry);
       }
-    });
+    } catch (_) {
+      if (mounted) setState(() => _error = '기록장을 열지 못했어요. 다시 시도해 주세요.');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return Scaffold(
+      body: _error != null
+          ? AppErrorState(message: _error!, onRetry: _openRecords)
+          : const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('기록장을 여는 중이에요.'),
+                  SizedBox(height: 16),
+                  DelayedSpinner(),
+                ],
+              ),
+            ),
+    );
   }
 }
 

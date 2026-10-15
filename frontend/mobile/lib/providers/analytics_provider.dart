@@ -12,6 +12,12 @@ class AnalyticsProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isTrendLoading = false;
   bool _isCatLoading = false;
+  String? _summaryError;
+  String? _trendError;
+  String? _categoryError;
+  int _summaryRequest = 0;
+  int _trendRequest = 0;
+  int _categoryRequest = 0;
 
   AnalyticsSummary? get summary => _summary;
   List<TrendPoint> get trends => _trends;
@@ -20,9 +26,24 @@ class AnalyticsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isTrendLoading => _isTrendLoading;
   bool get isCatLoading => _isCatLoading;
+  String? get summaryError => _summaryError;
+  String? get trendError => _trendError;
+  String? get categoryError => _categoryError;
+
+  @override
+  void dispose() {
+    // Invalidate outstanding reads before their completions can notify.
+    _summaryRequest++;
+    _trendRequest++;
+    _categoryRequest++;
+    super.dispose();
+  }
 
   Future<void> fetchSummary({int? year, int? month}) async {
+    final request = ++_summaryRequest;
     _isLoading = true;
+    _summary = null;
+    _summaryError = null;
     notifyListeners();
     try {
       final Map<String, dynamic> raw;
@@ -36,15 +57,25 @@ class AnalyticsProvider extends ChangeNotifier {
             await apiClient.dio.get('/analytics/summary', queryParameters: params);
         raw = res.data;
       }
+      if (request != _summaryRequest) return;
       _summary = AnalyticsSummary.fromJson(raw);
+    } catch (_) {
+      if (request == _summaryRequest) {
+        _summaryError = '이 달의 기록을 불러오지 못했어요. 다시 시도해 주세요.';
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (request == _summaryRequest) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
   Future<void> fetchTrends({int months = 6}) async {
+    final request = ++_trendRequest;
     _isTrendLoading = true;
+    _trends = [];
+    _trendError = null;
     notifyListeners();
     try {
       final Map<String, dynamic> raw;
@@ -55,16 +86,27 @@ class AnalyticsProvider extends ChangeNotifier {
             .get('/analytics/trends', queryParameters: {'months': months});
         raw = res.data;
       }
+      if (request != _trendRequest) return;
       _trends =
           (raw['trends'] as List).map((e) => TrendPoint.fromJson(e)).toList();
+    } catch (_) {
+      if (request == _trendRequest) {
+        _trendError = '선택한 기간의 흐름을 불러오지 못했어요. 다시 시도해 주세요.';
+      }
     } finally {
-      _isTrendLoading = false;
-      notifyListeners();
+      if (request == _trendRequest) {
+        _isTrendLoading = false;
+        notifyListeners();
+      }
     }
   }
 
   Future<void> fetchByCategory({int? year, int? month, String type = 'expense'}) async {
+    final request = ++_categoryRequest;
     _isCatLoading = true;
+    _categoryStats = [];
+    _categoryTotal = 0;
+    _categoryError = null;
     notifyListeners();
     try {
       final Map<String, dynamic> raw;
@@ -79,13 +121,21 @@ class AnalyticsProvider extends ChangeNotifier {
             .get('/analytics/by-category', queryParameters: params);
         raw = res.data;
       }
-      _categoryStats = (raw['categories'] as List)
+      if (request != _categoryRequest) return;
+      final stats = (raw['categories'] as List)
           .map((e) => CategoryStat.fromJson(e))
           .toList();
       _categoryTotal = (raw['total'] as num).toDouble();
+      _categoryStats = stats;
+    } catch (_) {
+      if (request == _categoryRequest) {
+        _categoryError = '분류별 기록을 불러오지 못했어요. 다시 시도해 주세요.';
+      }
     } finally {
-      _isCatLoading = false;
-      notifyListeners();
+      if (request == _categoryRequest) {
+        _isCatLoading = false;
+        notifyListeners();
+      }
     }
   }
 }

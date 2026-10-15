@@ -20,7 +20,7 @@ class RelationshipProvider extends ChangeNotifier {
     try {
       final List<dynamic> raw;
       if (AppConfig.isLocal) {
-        raw = await LocalStore.instance.listRelationships(limit: 50);
+        raw = await LocalStore.instance.listRelationships(limit: -1);
       } else {
         final res = await apiClient.dio
             .get('/relationships/', queryParameters: {'limit': 50});

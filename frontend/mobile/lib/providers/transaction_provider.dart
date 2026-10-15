@@ -8,19 +8,30 @@ class TransactionProvider extends ChangeNotifier {
   List<Transaction> _items = [];
   int _total = 0;
   bool _isLoading = false;
+  bool _isLoadingMore = false;
   String? _error;
+  String? _type;
+  int _pageSize = 20;
+  int _requestId = 0;
 
   List<Transaction> get items => _items;
   int get total => _total;
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMore => _items.length < _total;
   String? get error => _error;
 
   Future<void> fetchTransactions({
     int skip = 0,
     int limit = 20,
     String? type,
+    bool append = false,
   }) async {
-    _isLoading = true;
+    final requestId = ++_requestId;
+    _type = type;
+    _pageSize = limit;
+    _isLoading = !append;
+    _isLoadingMore = append;
     _error = null;
     notifyListeners();
     try {
@@ -36,14 +47,27 @@ class TransactionProvider extends ChangeNotifier {
         raw = res.data;
       }
       final data = TransactionListResponse.fromJson(raw);
-      _items = data.items;
+      if (requestId != _requestId) return;
+      _items = append ? [..._items, ...data.items] : data.items;
       _total = data.total;
     } catch (e) {
-      _error = '거래 목록을 불러오는데 실패했습니다';
+      if (requestId != _requestId) return;
+      _error = '주고받은 기록을 불러오지 못했어요. 다시 시도해 주세요.';
+      if (!append) _items = [];
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (requestId == _requestId) {
+        _isLoading = false;
+        _isLoadingMore = false;
+        notifyListeners();
+      }
     }
+  }
+
+  Future<void> refresh() => fetchTransactions(type: _type, limit: _pageSize);
+
+  Future<void> loadMore() async {
+    if (_isLoading || _isLoadingMore || !hasMore) return;
+    await fetchTransactions(skip: _items.length, limit: _pageSize, type: _type, append: true);
   }
 
   Future<bool> createTransaction({
@@ -78,7 +102,7 @@ class TransactionProvider extends ChangeNotifier {
           if (eventType != null && eventType.isNotEmpty) 'event_type': eventType,
         });
       }
-      await fetchTransactions();
+      await refresh();
       return true;
     } catch (_) {
       return false;

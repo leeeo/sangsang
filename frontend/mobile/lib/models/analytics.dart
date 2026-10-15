@@ -71,6 +71,12 @@ class CategoryStat {
     required this.ratio,
   });
 
+  String get displayName => switch (id) {
+    'sys-14' => '기타 보낸 마음',
+    'sys-15' => '기타 받은 마음',
+    _ => name,
+  };
+
   factory CategoryStat.fromJson(Map<String, dynamic> json) => CategoryStat(
         id: json['id'],
         name: json['name'],

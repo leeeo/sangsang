@@ -502,20 +502,24 @@ class LocalStore {
     final db = await _database;
     final rows = await db.rawQuery('''
       SELECT t.transaction_date, t.type, t.amount, t.counterparty_name,
-             c.name AS category, t.event_type, t.memo
+             c.id AS category_id, c.is_system, c.name AS category, t.event_type, t.memo
       FROM transactions t
       LEFT JOIN categories c ON c.id = t.category_id
       ORDER BY t.transaction_date DESC, t.created_at DESC
     ''');
     final buf = StringBuffer()
-      ..writeln('날짜,유형,금액,상대방,카테고리,경조사유형,메모');
+      ..writeln('날짜,마음의방향,금액,함께한사람,분류,경조사,메모');
     for (final r in rows) {
       buf.writeln([
         r['transaction_date'],
-        r['type'] == 'income' ? '수입' : '지출',
+        r['type'] == 'income' ? '받은 마음' : '보낸 마음',
         r['amount'],
         r['counterparty_name'],
-        r['category'],
+        r['is_system'] == 1 && r['category_id'] == 'sys-14'
+            ? '기타 보낸 마음'
+            : r['is_system'] == 1 && r['category_id'] == 'sys-15'
+                ? '기타 받은 마음'
+                : r['category'],
         r['event_type'],
         r['memo'],
       ].map(_csvCell).join(','));

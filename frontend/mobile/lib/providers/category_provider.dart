@@ -18,7 +18,7 @@ class CategoryProvider extends ChangeNotifier {
       _categories.where((c) => c.type == 'income').toList();
 
   String nameById(String id) =>
-      _categories.firstWhere((c) => c.id == id, orElse: () => Category(id: '', name: '-', type: '', isSystem: false)).name;
+      _categories.firstWhere((c) => c.id == id, orElse: () => Category(id: '', name: '분류 미지정', type: '', isSystem: false)).displayName;
 
   Future<void> fetchCategories() async {
     if (_categories.isNotEmpty) return; // 캐시 활용

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../core/app_theme.dart';
 
 class AmountText extends StatelessWidget {
   final double amount;
@@ -18,11 +19,19 @@ class AmountText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final formatted = NumberFormat('#,###', 'ko_KR').format(amount);
-    final prefix = isExpense ? '-' : '+';
-    final color = isExpense ? const Color(0xFFEF4444) : const Color(0xFF10B981);
-    return Text(
-      '$prefix$formatted원',
-      style: TextStyle(fontSize: fontSize, fontWeight: fontWeight, color: color),
+    final color = isExpense ? AppColors.sentOf(context) : AppColors.receivedOf(context);
+    return Semantics(
+      label: '${isExpense ? '보낸 마음' : '받은 마음'} $formatted원',
+      excludeSemantics: true,
+      child: Text(
+        '$formatted원',
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          color: color,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
     );
   }
 }

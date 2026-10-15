@@ -9,6 +9,8 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../data/local_store.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/app_shell.dart';
+import '../../widgets/delayed_spinner.dart';
 
 /// 데이터 백업/복원 화면 (로컬 모드 전용).
 /// - 전체 백업(JSON): 재설치·기기변경 대비 복원 가능한 파일
@@ -33,7 +35,7 @@ class _BackupScreenState extends State<BackupScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
-      backgroundColor: error ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+      backgroundColor: error ? Theme.of(context).colorScheme.error : null,
     ));
   }
 
@@ -50,7 +52,8 @@ class _BackupScreenState extends State<BackupScreen> {
         text: '상부상조 백업 파일입니다. 안전한 곳(드라이브/파일 앱)에 보관하세요.',
       );
     } catch (e) {
-      _snack('백업 내보내기 실패: $e', error: true);
+      debugPrint('Backup export failed: ${e.runtimeType}');
+      _snack('백업 파일을 만들지 못했어요. 저장 공간을 확인하고 다시 시도해 주세요.', error: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -61,15 +64,16 @@ class _BackupScreenState extends State<BackupScreen> {
     try {
       final csv = await LocalStore.instance.exportTransactionsCsv();
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/sangsang-거래내역-${_todayStamp()}.csv');
+      final file = File('${dir.path}/sangsang-마음기록-${_todayStamp()}.csv');
       // BOM 추가 → 엑셀이 한글을 깨짐 없이 인식
       await file.writeAsString('\uFEFF$csv');
       await Share.shareXFiles(
         [XFile(file.path)],
-        subject: '상부상조 거래 내역',
+        subject: '상부상조 주고받은 기록',
       );
     } catch (e) {
-      _snack('CSV 내보내기 실패: $e', error: true);
+      debugPrint('CSV export failed: ${e.runtimeType}');
+      _snack('기록 파일을 만들지 못했어요. 다시 시도해 주세요.', error: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -91,7 +95,14 @@ class _BackupScreenState extends State<BackupScreen> {
             '선택한 백업 파일의 내용을 현재 데이터에 복원합니다.\n같은 기록은 덮어쓰고, 새 기록은 추가됩니다. 계속할까요?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('복원')),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('덮어쓰고 가져오기'),
+          ),
         ],
       ),
     );
@@ -107,7 +118,7 @@ class _BackupScreenState extends State<BackupScreen> {
       final count = await LocalStore.instance.importBackup(data);
       await auth.fetchMe();
       if (!mounted) return;
-      _snack('복원 완료 — 거래 $count건');
+      _snack('기록 $count건을 복원했어요.');
       navigator.pushNamedAndRemoveUntil('/home', (_) => false);
     } catch (e) {
       _snack('복원 실패: 올바른 상부상조 백업 파일인지 확인하세요', error: true);
@@ -119,13 +130,10 @@ class _BackupScreenState extends State<BackupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6366F1),
-        foregroundColor: Colors.white,
-        title: const Text('백업 / 복원', style: TextStyle(fontWeight: FontWeight.w600)),
+        title: const Text('기록 보관'),
       ),
-      body: Stack(
+      body: PageBody(maxWidth: 640, child: Stack(
         children: [
           ListView(
             padding: const EdgeInsets.all(16),
@@ -135,17 +143,17 @@ class _BackupScreenState extends State<BackupScreen> {
               _Section(title: '내보내기', children: [
                 _ActionTile(
                   icon: Icons.backup_outlined,
-                  color: const Color(0xFF6366F1),
-                  title: '전체 백업 (JSON)',
-                  subtitle: '기기 변경·재설치 대비. 이 파일로 복원 가능',
+                  color: Theme.of(context).colorScheme.primary,
+                  title: '기록 백업 파일 만들기',
+                  subtitle: '기기를 바꿔도 복원할 수 있는 JSON 파일',
                   onTap: _busy ? null : _exportJson,
                 ),
                 const Divider(height: 1),
                 _ActionTile(
                   icon: Icons.table_chart_outlined,
-                  color: const Color(0xFF10B981),
-                  title: '거래 내역 (CSV)',
-                  subtitle: '엑셀에서 열어보기용',
+                  color: Theme.of(context).colorScheme.primary,
+                  title: '주고받은 기록 내려받기',
+                  subtitle: '엑셀에서 보는 CSV 파일 · 앱 복원용은 아니에요',
                   onTap: _busy ? null : _exportCsv,
                 ),
               ]),
@@ -153,8 +161,8 @@ class _BackupScreenState extends State<BackupScreen> {
               _Section(title: '가져오기', children: [
                 _ActionTile(
                   icon: Icons.restore_outlined,
-                  color: const Color(0xFFF59E0B),
-                  title: '백업 파일로 복원 (JSON)',
+                  color: Theme.of(context).colorScheme.primary,
+                  title: '백업 파일로 복원하기',
                   subtitle: '내보낸 백업(.json)을 선택해 복원',
                   onTap: _busy ? null : _importJson,
                 ),
@@ -164,10 +172,22 @@ class _BackupScreenState extends State<BackupScreen> {
           if (_busy)
             Container(
               color: Colors.black.withAlpha(30),
-              child: const Center(child: CircularProgressIndicator()),
+              child: const Center(child: Card(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('백업 파일을 처리하는 중이에요.'),
+                      SizedBox(height: 16),
+                      DelayedSpinner(),
+                    ],
+                  ),
+                ),
+              )),
             ),
         ],
-      ),
+      )),
     );
   }
 }
@@ -180,19 +200,18 @@ class _Notice extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF7ED),
+        color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFED7AA)),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, color: Color(0xFFF59E0B), size: 22),
-          SizedBox(width: 12),
+          Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onPrimaryContainer, size: 22),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '모든 기록은 이 기기에만 저장됩니다.\n앱을 삭제하거나 기기를 바꾸면 데이터가 사라지니, 백업 파일을 드라이브·파일 앱 등에 보관하세요.',
-              style: TextStyle(fontSize: 13, color: Color(0xFF92400E), height: 1.5),
+              '기록은 이 기기에만 저장돼요.\n앱 삭제·기기 변경 전에는\n백업 파일을 따로 보관해 주세요.',
+              style: TextStyle(fontSize: 15, color: Theme.of(context).colorScheme.onPrimaryContainer, height: 1.5),
             ),
           ),
         ],
@@ -214,12 +233,12 @@ class _Section extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(title,
-              style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+              style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(children: children),
@@ -253,9 +272,9 @@ class _ActionTile extends StatelessWidget {
         decoration: BoxDecoration(color: color.withAlpha(28), borderRadius: BorderRadius.circular(12)),
         child: Icon(icon, color: color),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
-      trailing: const Icon(Icons.chevron_right, color: Color(0xFFCBD5E1)),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 17)),
+      subtitle: Text(subtitle, style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+      trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurfaceVariant),
       onTap: onTap,
     );
   }

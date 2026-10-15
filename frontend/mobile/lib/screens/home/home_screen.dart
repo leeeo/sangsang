@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_config.dart';
+import '../../core/app_theme.dart';
+import '../../models/analytics.dart';
 import '../../providers/analytics_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
+import '../../providers/transaction_provider.dart';
 import '../../widgets/amount_text.dart';
+import '../../widgets/app_shell.dart';
 import '../../widgets/banner_ad_widget.dart';
-import '../../models/transaction.dart';
-import 'package:intl/intl.dart';
+import '../../widgets/record_tile.dart';
+import '../../widgets/delayed_spinner.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,284 +22,196 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String? _loadError;
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AnalyticsProvider>().fetchSummary();
-      context.read<TransactionProvider>().fetchTransactions(limit: 5);
-      context.read<CategoryProvider>().fetchCategories();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+  }
+
+  Future<void> _refresh() async {
+    final now = DateTime.now();
+    setState(() => _loadError = null);
+    try {
+      await Future.wait([
+        context.read<AnalyticsProvider>().fetchSummary(year: now.year, month: now.month),
+        context.read<TransactionProvider>().fetchTransactions(limit: 5),
+        context.read<CategoryProvider>().fetchCategories(),
+      ]);
+    } catch (_) {
+      if (mounted) setState(() => _loadError = '분류 정보를 불러오지 못했어요. 다시 시도해 주세요.');
+    }
+  }
+
+  Future<void> _addRecord() async {
+    await Navigator.pushNamed(context, '/transactions/new');
+    if (mounted) await _refresh();
   }
 
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
     final analytics = context.watch<AnalyticsProvider>();
-    final txProvider = context.watch<TransactionProvider>();
-
+    final records = context.watch<TransactionProvider>();
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6366F1),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('안녕하세요, ${user?.displayName ?? ''}님', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-            Text(DateFormat('yyyy년 MM월').format(DateTime.now()), style: const TextStyle(fontSize: 12, color: Colors.white70)),
-          ],
-        ),
+        title: const Text('상부상조'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.backup_outlined),
-            tooltip: '백업 / 복원',
-            onPressed: () => Navigator.pushNamed(context, '/backup'),
-          ),
-          // 로컬 모드에는 계정 개념이 없어 로그아웃을 노출하지 않는다 (서버 모드 전용)
+          if (AppConfig.isLocal)
+            IconButton(
+              tooltip: '기록 백업',
+              icon: const Icon(Icons.backup_outlined),
+              onPressed: () => Navigator.pushNamed(context, '/backup'),
+            ),
           if (!AppConfig.isLocal)
             IconButton(
+              tooltip: '로그아웃',
               icon: const Icon(Icons.logout_outlined),
-              onPressed: () => context.read<AuthProvider>().logout(),
+              onPressed: () async {
+                await context.read<AuthProvider>().logout();
+                if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+              },
             ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          final analytics = context.read<AnalyticsProvider>();
-          final tx = context.read<TransactionProvider>();
-          await Future.wait([
-            analytics.fetchSummary(),
-            tx.fetchTransactions(limit: 5),
-          ]);
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: PageBody(
+        child: RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
             children: [
-              // 요약 카드
-              _SummaryCard(analytics: analytics),
-              const SizedBox(height: 20),
-
-              // 빠른 메뉴
+              Text('${user?.displayName ?? '나'}님의 마음 기록',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              Text('챙겨준 마음도, 전한 마음도 잊지 않도록.',
+                  style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 16)),
+              const SizedBox(height: 24),
               Row(
                 children: [
-                  _QuickMenu(
-                    icon: Icons.people_outline,
-                    label: '관계 관리',
-                    onTap: () => Navigator.pushNamed(context, '/relationships'),
-                  ),
-                  const SizedBox(width: 12),
-                  _QuickMenu(
-                    icon: Icons.bar_chart_outlined,
-                    label: '분석',
-                    onTap: () => Navigator.pushNamed(context, '/analytics'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // 최근 거래
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('최근 거래', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Expanded(child: Text(DateFormat('yyyy년 M월').format(DateTime.now()),
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600))),
                   TextButton(
-                    onPressed: () => Navigator.pushNamed(context, '/transactions'),
-                    child: const Text('전체 보기', style: TextStyle(color: Color(0xFF6366F1))),
+                    onPressed: () => Navigator.pushReplacementNamed(context, '/analytics'),
+                    child: const Text('월별 보기'),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              if (txProvider.isLoading)
-                const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
-              else if (txProvider.items.isEmpty)
-                _EmptyTransactions()
+              if (analytics.isLoading)
+                const _MonthOverview(summary: null)
+              else if (analytics.summaryError != null)
+                AppErrorState(message: analytics.summaryError!, onRetry: _refresh)
+              else if (analytics.summary != null)
+                _MonthOverview(summary: analytics.summary!),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                key: const ValueKey('home-add-record'),
+                onPressed: _addRecord,
+                icon: const Icon(Icons.add),
+                label: const Text('마음 기록'),
+              ),
+              const SizedBox(height: 28),
+              Row(
+                children: [
+                  const Expanded(child: Text('최근 주고받은 마음',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600))),
+                  TextButton(
+                    onPressed: () => Navigator.pushReplacementNamed(context, '/transactions'),
+                    child: const Text('전체 보기'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (_loadError != null)
+                AppErrorState(message: _loadError!, onRetry: _refresh)
+              else if (records.isLoading)
+                const Center(child: CircularProgressIndicator())
+              else if (records.error != null)
+                AppErrorState(message: records.error!, onRetry: _refresh)
+              else if (records.items.isEmpty)
+                const Card(child: AppEmptyState(
+                  icon: Icons.volunteer_activism_outlined,
+                  title: '첫 마음을 남겨보세요',
+                  message: '함께한 사람과 경조사를 기록하면\n'
+                      '다음에 챙길 때 꺼내볼 수 있어요.',
+                ))
               else
-                ...txProvider.items.map((tx) => _TransactionTile(tx: tx)),
-
-              const SizedBox(height: 80),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: const SafeArea(child: BannerAdWidget()),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await Navigator.pushNamed(context, '/transactions/new');
-          if (!context.mounted) return;
-          context.read<AnalyticsProvider>().fetchSummary();
-          context.read<TransactionProvider>().fetchTransactions(limit: 5);
-        },
-        backgroundColor: const Color(0xFF6366F1),
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('거래 등록'),
-      ),
-    );
-  }
-}
-
-class _SummaryCard extends StatelessWidget {
-  final AnalyticsProvider analytics;
-  const _SummaryCard({required this.analytics});
-
-  @override
-  Widget build(BuildContext context) {
-    final s = analytics.summary;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: const Color(0xFF6366F1).withAlpha(80), blurRadius: 20, offset: const Offset(0, 8))],
-      ),
-      child: analytics.isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('이번 달 잔액', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                const SizedBox(height: 4),
-                Text(
-                  s != null ? formatKRW(s.balance) : '-',
-                  style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
-                ),
+                ...records.items.map((record) => RecordTile(record: record)),
+              if (AppConfig.isLocal) ...[
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(child: _StatItem(label: '수입', amount: s?.income ?? 0, color: const Color(0xFFD1FAE5))),
-                    const SizedBox(width: 12),
-                    Expanded(child: _StatItem(label: '지출', amount: s?.expense ?? 0, color: const Color(0xFFFFEDED))),
-                  ],
+                TextButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, '/backup'),
+                  icon: const Icon(Icons.shield_outlined, size: 18),
+                  label: const Text('소중한 기록, 백업으로 지켜두세요'),
                 ),
               ],
-            ),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String label;
-  final double amount;
-  final Color color;
-  const _StatItem({required this.label, required this.amount, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-          const SizedBox(height: 2),
-          Text(formatKRW(amount), style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
-}
-
-class _TransactionTile extends StatelessWidget {
-  final Transaction tx;
-  const _TransactionTile({required this.tx});
-
-  @override
-  Widget build(BuildContext context) {
-    final catName = context.read<CategoryProvider>().nameById(tx.categoryId);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 8)],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: tx.isExpense ? const Color(0xFFFEE2E2) : const Color(0xFFDCFCE7),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(tx.isExpense ? Icons.arrow_upward : Icons.arrow_downward,
-                color: tx.isExpense ? const Color(0xFFEF4444) : const Color(0xFF10B981)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(tx.counterpartyName ?? catName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                Text(DateFormat('MM.dd').format(tx.transactionDate), style: const TextStyle(color: Colors.grey, fontSize: 12)),
-              ],
-            ),
-          ),
-          AmountText(amount: tx.amount, isExpense: tx.isExpense, fontSize: 15),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyTransactions extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-      child: const Center(
-        child: Column(
-          children: [
-            Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey),
-            SizedBox(height: 12),
-            Text('아직 거래 내역이 없습니다', style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickMenu extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  const _QuickMenu({required this.icon, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 8)],
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: const Color(0xFF6366F1), size: 28),
-              const SizedBox(height: 6),
-              Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
       ),
+      bottomNavigationBar: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [BannerAdWidget(), AppNavigation(index: 0)],
+      ),
     );
   }
+}
+
+class _MonthOverview extends StatelessWidget {
+  final AnalyticsSummary? summary;
+  const _MonthOverview({required this.summary});
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
+    final stack = constraints.maxWidth < 340 || MediaQuery.textScalerOf(context).scale(1) > 1.2 ||
+        (constraints.maxWidth < 500 && ((summary?.income ?? 0) >= 100000000 || (summary?.expense ?? 0) >= 100000000));
+    final received = _MindTotal(label: '받은 마음', amount: summary?.income,
+        count: summary?.incomeCount, color: AppColors.receivedOf(context), icon: Icons.call_received);
+    final sent = _MindTotal(label: '보낸 마음', amount: summary?.expense,
+        count: summary?.expenseCount, color: AppColors.sentOf(context), icon: Icons.call_made);
+    return stack
+        ? Column(children: [received, const SizedBox(height: 12), sent])
+        : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: received), const SizedBox(width: 12), Expanded(child: sent),
+          ]);
+  });
+}
+
+class _MindTotal extends StatelessWidget {
+  final String label;
+  final double? amount;
+  final int? count;
+  final Color color;
+  final IconData icon;
+  const _MindTotal({required this.label, required this.amount, required this.count,
+      required this.color, required this.icon});
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [Icon(icon, size: 18, color: color), const SizedBox(width: 8),
+            Expanded(child: Text(label, style: TextStyle(color: color, fontSize: 15)))]),
+          const SizedBox(height: 16),
+          if (amount == null)
+            const Row(children: [
+              Text('—', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+              SizedBox(width: 12),
+              DelayedSpinner(),
+            ])
+          else
+            Text(formatKRW(amount!), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700,
+                fontFeatures: [FontFeature.tabularFigures()])),
+          const SizedBox(height: 8),
+          Text(count == null ? '불러오는 중' : '$count건의 마음',
+              style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        ],
+      ),
+    ),
+  );
 }

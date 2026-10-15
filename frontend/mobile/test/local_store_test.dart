@@ -311,10 +311,10 @@ void main() {
           counterpartyName: '김,민수');
       final csv = await store.exportTransactionsCsv();
       final lines = csv.trim().split('\n');
-      expect(lines.first, '날짜,유형,금액,상대방,카테고리,경조사유형,메모');
+      expect(lines.first, '날짜,마음의방향,금액,함께한사람,분류,경조사,메모');
       expect(lines.length, 2);
       expect(lines[1], contains('"김,민수"'));
-      expect(lines[1], contains('지출'));
+      expect(lines[1], contains('보낸 마음'));
     });
   });
 }

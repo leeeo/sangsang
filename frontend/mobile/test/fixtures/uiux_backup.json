@@ -1,0 +1,21 @@
+{
+  "app": "sangbu-sangjo",
+  "schema": 1,
+  "exported_at": "2026-10-14T12:00:00.000",
+  "profile": [
+    {"id": "local-user", "name": "민지", "created_at": "2026-10-14T12:00:00.000"}
+  ],
+  "categories": [],
+  "transactions": [
+    {"id": "qa-wedding-sent", "category_id": "sys-01", "amount": 100000, "type": "expense", "transaction_date": "2026-10-14", "counterparty_name": "김서연", "memo": "대학 친구의 결혼식 · UI 검증용 예시", "event_type": "wedding", "created_at": "2026-10-14T12:00:00.000"},
+    {"id": "qa-wedding-received", "category_id": "sys-10", "amount": 50000, "type": "income", "transaction_date": "2026-10-12", "counterparty_name": "김서연", "memo": "함께해 줘서 고마웠던 날 · UI 검증용 예시", "event_type": "wedding", "created_at": "2026-10-14T11:00:00.000"},
+    {"id": "qa-birthday-received", "category_id": "sys-11", "amount": 100000, "type": "income", "transaction_date": "2026-10-10", "counterparty_name": "박지훈", "memo": "생일을 챙겨준 마음 · UI 검증용 예시", "event_type": "birthday", "created_at": "2026-10-14T10:00:00.000"},
+    {"id": "qa-funeral-sent", "category_id": "sys-02", "amount": 50000, "type": "expense", "transaction_date": "2026-10-08", "counterparty_name": "최도윤", "memo": "위로의 마음을 전한 날 · UI 검증용 예시", "event_type": "funeral", "created_at": "2026-10-14T09:00:00.000"},
+    {"id": "qa-baby-sent", "category_id": "sys-03", "amount": 30000, "type": "expense", "transaction_date": "2026-09-28", "counterparty_name": "박지훈", "memo": "첫 생일 축하 · UI 검증용 예시", "event_type": "baby", "created_at": "2026-10-14T08:00:00.000"}
+  ],
+  "relationships": [
+    {"id": "qa-seoyeon", "counterparty_name": "김서연", "relationship_type": "friend", "notes": "대학 친구 · 검증용 예시", "created_at": "2026-10-14T08:00:00.000"},
+    {"id": "qa-jihoon", "counterparty_name": "박지훈", "relationship_type": "family", "notes": "사촌 · 검증용 예시", "created_at": "2026-10-14T08:00:00.000"},
+    {"id": "qa-doyoon", "counterparty_name": "최도윤", "relationship_type": "colleague", "notes": "직장동료 · 검증용 예시", "created_at": "2026-10-14T08:00:00.000"}
+  ]
+}

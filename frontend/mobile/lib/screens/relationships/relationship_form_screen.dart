@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/relationship_provider.dart';
+import '../../widgets/app_shell.dart';
+import '../../widgets/form_exit_guard.dart';
+import '../../widgets/delayed_spinner.dart';
 
 const _kRelationshipTypes = ['가족', '친구', '직장동료', '지인', '기타'];
 
@@ -16,7 +19,9 @@ class _RelationshipFormScreenState extends State<RelationshipFormScreen> {
   final _nameCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   String? _selectedType;
+  String? _error;
   bool _isSubmitting = false;
+  bool _saved = false;
 
   @override
   void dispose() {
@@ -26,115 +31,134 @@ class _RelationshipFormScreenState extends State<RelationshipFormScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _isSubmitting = true);
-    final ok = await context.read<RelationshipProvider>().createRelationship(
-          counterpartyName: _nameCtrl.text.trim(),
-          relationshipType: _selectedType,
-          notes: _notesCtrl.text.trim(),
-        );
-    if (!mounted) return;
-    setState(() => _isSubmitting = false);
-    if (ok) {
-      Navigator.pop(context, true);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('등록에 실패했습니다. 이미 등록된 상대방일 수 있습니다.'),
-          backgroundColor: Color(0xFFEF4444),
-        ),
+    if (_isSubmitting || !_formKey.currentState!.validate()) return;
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+    var saved = false;
+    try {
+      saved = await context.read<RelationshipProvider>().createRelationship(
+        counterpartyName: _nameCtrl.text.trim(),
+        relationshipType: _selectedType,
+        notes: _notesCtrl.text.trim(),
       );
+    } catch (_) {
+      saved = false;
+    }
+    if (!mounted) return;
+    setState(() {
+      _isSubmitting = false;
+      _saved = saved;
+      if (!saved) {
+        _error = '사람을 저장하지 못했어요. 이미 추가한 이름인지 확인한 뒤 다시 시도해 주세요.';
+      }
+    });
+    if (saved) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (mounted) Navigator.pop(context, true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF6366F1),
-        foregroundColor: Colors.white,
-        title: const Text('관계 추가', style: TextStyle(fontWeight: FontWeight.w600)),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 16, offset: const Offset(0, 4))
-            ],
-          ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextFormField(
-                  controller: _nameCtrl,
-                  decoration: _inputDecoration('상대방 이름 *', Icons.person_outlined),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return '이름을 입력하세요';
-                    if (v.trim().length > 100) return '100자 이내로 입력하세요';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedType,
-                  decoration: _inputDecoration('관계 유형 (선택)', Icons.group_outlined),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('선택 안함')),
-                    ..._kRelationshipTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))),
-                  ],
-                  onChanged: (v) => setState(() => _selectedType = v),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _notesCtrl,
-                  decoration: _inputDecoration('메모 (선택)', Icons.notes_outlined),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isSubmitting ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366F1),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return FormExitGuard(
+      hasChanges: !_saved && (_nameCtrl.text.isNotEmpty || _notesCtrl.text.isNotEmpty || _selectedType != null),
+      saving: _isSubmitting,
+      child: Scaffold(
+      appBar: AppBar(title: const Text('사람 추가')),
+      body: SafeArea(
+        child: PageBody(
+          maxWidth: 640,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              onChanged: () => setState(() {}),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('기억하고 싶은 사람',
+                      style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  const Text('같은 이름의 기록이 한곳에 모여요.\n기록에 쓴 이름 그대로 입력해 주세요.'),
+                  const SizedBox(height: 24),
+                  TextFormField(
+                    key: const ValueKey('person-name'),
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    controller: _nameCtrl,
+                    enabled: !_isSubmitting,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: '이름',
+                      floatingLabelBehavior: FloatingLabelBehavior.always,
+                      hintText: '예: 김민수',
+                      prefixIcon: Icon(Icons.person_outline),
+                      errorMaxLines: 3,
                     ),
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            width: 20, height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('추가하기', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return '이름을 입력해 주세요.';
+                      }
+                      if (value.trim().length > 100) {
+                        return '100자 이내로 입력해 주세요.';
+                      }
+                      return null;
+                    },
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    key: const ValueKey('person-relation'),
+                    initialValue: _selectedType ?? '',
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: '나와의 관계 (선택)',
+                      floatingLabelBehavior: FloatingLabelBehavior.always,
+                    ),
+                    items: [
+                      const DropdownMenuItem(value: '', child: Text('선택 안 함')),
+                      ..._kRelationshipTypes.map((type) =>
+                          DropdownMenuItem(value: type, child: Text(type))),
+                    ],
+                    onChanged: _isSubmitting ? null : (value) => setState(() =>
+                        _selectedType = value == null || value.isEmpty ? null : value),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    key: const ValueKey('person-notes'),
+                    controller: _notesCtrl,
+                    enabled: !_isSubmitting,
+                    decoration: const InputDecoration(
+                      labelText: '기억할 내용 (선택)',
+                      floatingLabelBehavior: FloatingLabelBehavior.always,
+                      hintText: '예: 대학 동아리에서 만난 친구',
+                    ),
+                    minLines: 2,
+                    maxLines: 4,
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 16),
+                    Semantics(
+                      liveRegion: true,
+                      child: Text(_error!, style: TextStyle(
+                          color: Theme.of(context).colorScheme.error)),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    key: const ValueKey('person-save'),
+                    onPressed: _isSubmitting ? null : _submit,
+                    icon: _isSubmitting
+                        ? const DelayedSpinner()
+                        : const Icon(Icons.person_add_outlined),
+                    label: Text(_isSubmitting ? '저장하는 중' : '사람 추가하기'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    );
+    ));
   }
-
-  InputDecoration _inputDecoration(String label, IconData icon) => InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: Colors.grey),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFD1D5DB))),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFD1D5DB))),
-        focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2)),
-        filled: true,
-        fillColor: const Color(0xFFF8FAFC),
-      );
 }
