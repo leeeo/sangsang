@@ -44,7 +44,14 @@ abstract final class AppTheme {
       error: dark ? const Color(0xFFFFB4AB) : AppColors.danger,
     );
     final canvas = dark ? const Color(0xFF17231F) : AppColors.canvas;
-    final base = ThemeData(useMaterial3: true, colorScheme: scheme);
+    // Desktop browsers default to compact density and shrink-wrapped tap
+    // targets; keep the 48dp mobile touch contract on every platform.
+    final base = ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      visualDensity: VisualDensity.standard,
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+    );
     return base.copyWith(
       scaffoldBackgroundColor: canvas,
       textTheme: base.textTheme.copyWith(
