@@ -298,6 +298,32 @@ void main() {
     }
   });
 
+  testWidgets('quick amounts replace input with grouped KRW and save exact won',
+      (tester) async {
+    final records = _Records();
+    await _mount(tester, const TransactionFormScreen(), records: records);
+    await _selectCategory(tester, 'sent');
+    for (final amount in [30000, 50000, 100000, 200000]) {
+      await _tap(tester, _key('record-quick-$amount'));
+      expect(
+        tester.widget<TextFormField>(_key('record-amount')).controller!.text
+            .replaceAll(',', ''),
+        '$amount',
+      );
+    }
+    final submitted = records.submitted.future;
+    await _tap(tester, _key('record-save'));
+    await submitted;
+    expect(records.calls.single['amount'], 200000);
+    for (final amount in [30000, 50000, 100000, 200000]) {
+      expect(tester.widget<OutlinedButton>(_key('record-quick-$amount')).onPressed,
+          isNull);
+    }
+    records.completion.complete(false);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('saving locks duplicate submits and failure preserves retry data',
       (tester) async {
     final records = _Records();

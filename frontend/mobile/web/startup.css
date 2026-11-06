@@ -1,0 +1,67 @@
+:root {
+  color-scheme: light dark;
+  --startup-canvas: #f6f5f0;
+  --startup-ink: #243c34;
+  --startup-muted: #5f7067;
+  --startup-primary: #285c50;
+  --startup-on-primary: #ffffff;
+  --startup-space: 16px;
+  --startup-radius: 12px;
+  --startup-body: 16px;
+  --startup-title: 24px;
+  --startup-leading: 1.5;
+  --startup-width: 640px;
+  --startup-target: 48px;
+  --startup-focus: 3px;
+  --startup-focus-gap: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --startup-canvas: #17231f;
+    --startup-ink: #ecf1ea;
+    --startup-muted: #b6c4ba;
+    --startup-primary: #a4cbb3;
+    --startup-on-primary: #17231f;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--startup-canvas);
+}
+
+#startup {
+  box-sizing: border-box;
+  max-width: var(--startup-width);
+  margin: auto;
+  padding: calc(var(--startup-space) * 2) var(--startup-space);
+  color: var(--startup-ink);
+  font: var(--startup-body)/var(--startup-leading) system-ui, sans-serif;
+}
+
+#startup h1 {
+  font-size: var(--startup-title);
+  margin-block: var(--startup-space);
+}
+
+#startup p {
+  color: var(--startup-muted);
+  margin-block: var(--startup-space);
+}
+
+#startup button {
+  min-height: var(--startup-target);
+  padding: var(--startup-space);
+  border: 0;
+  border-radius: var(--startup-radius);
+  background: var(--startup-primary);
+  color: var(--startup-on-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+#startup button:focus-visible {
+  outline: var(--startup-focus) solid var(--startup-primary);
+  outline-offset: var(--startup-focus-gap);
+}

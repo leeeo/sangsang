@@ -36,7 +36,9 @@ class _BackupScreenState extends State<BackupScreen> {
   void _snack(String msg, {bool error = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
+      content: Text(msg, style: error
+          ? TextStyle(color: Theme.of(context).colorScheme.onError)
+          : null),
       backgroundColor: error ? Theme.of(context).colorScheme.error : null,
     ));
   }
@@ -224,7 +226,10 @@ class _Notice extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '기록은 이 기기에만 저장돼요.\n앱 삭제·기기 변경 전에는\n백업 파일을 따로 보관해 주세요.',
+              '기록은 이 기기·브라우저에만 저장돼요.\n'
+              '휴대폰 분실·앱 삭제·브라우저 데이터 삭제 시 '
+              '백업 없이는 복구할 수 없어요.\n'
+              '백업 파일은 다른 기기나 안전한 드라이브에 보관해 주세요.',
               style: TextStyle(fontSize: 15, color: Theme.of(context).colorScheme.onPrimaryContainer, height: 1.5),
             ),
           ),

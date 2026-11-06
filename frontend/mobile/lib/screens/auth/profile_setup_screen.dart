@@ -116,7 +116,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           const Text('회원가입 없이 시작해요.\n기록은 기기에만 저장해요.\n서버로 보내지 않아요.'),
                           const SizedBox(height: 12),
                           Text(
-                            '앱 삭제·기기 변경 전에는\n홈에서 백업 파일을 보관해 주세요.',
+                            '휴대폰 분실·앱 삭제·브라우저 데이터 삭제 시\n'
+                            '백업 없이는 기록을 복구할 수 없어요.\n'
+                            '홈의 기록 백업에서 파일을 따로 보관해 주세요.',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),

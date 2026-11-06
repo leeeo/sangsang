@@ -109,6 +109,17 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     return null;
   }
 
+  String get _amountHelp {
+    if (_validateAmount(_amountCtrl.text) != null) {
+      return '원 단위로 입력하거나 아래 금액을 선택하세요.';
+    }
+    final amount = int.parse(_amountCtrl.text.trim().replaceAll(',', ''));
+    final won = NumberFormat('#,###').format(amount);
+    return amount % 10000 == 0
+        ? '${NumberFormat('#,###').format(amount ~/ 10000)}만 원 · $won원'
+        : '$won원';
+  }
+
   Future<void> _submit() async {
     if (_isSubmitting || !_formKey.currentState!.validate()) return;
     setState(() {
@@ -187,7 +198,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                     decoration: const InputDecoration(
                       labelText: '함께한 사람 (선택)',
                       floatingLabelBehavior: FloatingLabelBehavior.always,
-                      hintText: '예: 김민수',
+                      hintText: '이름 또는 별명',
                       prefixIcon: Icon(Icons.person_outline),
                     ),
                     validator: (value) => (value?.trim().length ?? 0) > 100
@@ -231,14 +242,37 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                     enabled: !_isSubmitting,
                     keyboardType: TextInputType.number,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: '금액',
                       floatingLabelBehavior: FloatingLabelBehavior.always,
                       hintText: '예: 50,000',
                       suffixText: '원',
+                      helperText: _amountHelp,
+                      helperMaxLines: 2,
                       errorMaxLines: 3,
                     ),
                     validator: _validateAmount,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final amount in const [30000, 50000, 100000, 200000])
+                        OutlinedButton(
+                          key: ValueKey('record-quick-$amount'),
+                          onPressed: _isSubmitting ? null : () {
+                            final text = NumberFormat('#,###').format(amount);
+                            setState(() {
+                              _amountCtrl.value = TextEditingValue(
+                                text: text,
+                                selection: TextSelection.collapsed(offset: text.length),
+                              );
+                            });
+                          },
+                          child: Text('${amount ~/ 10000}만 원'),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   KeyedSubtree(
