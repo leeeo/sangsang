@@ -187,7 +187,7 @@ def chevron(s: Screen, cx, cy, c, right=True, r=10):
 
 def screen_home():
     s = Screen()
-    s.app_bar("안녕하세요, 어진님", "2026년 7월")
+    s.app_bar("안녕하세요", "2026년 7월")
 
     # 요약 카드
     s.gradient_rr([44, 250, W - 44, 560], 26)
