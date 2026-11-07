@@ -2,7 +2,9 @@
 name: sangsang-web
 services:
   web:
-    image: nginx:1.29-alpine
+    # Shared patched base (nginx 1.30 stable + apk upgrade), built 2026-11-07 from leeeo-company deploy/static/nginx-base.
+    image: leeeo-nginx-base:20261107
+    pull_policy: never
     restart: unless-stopped
     volumes:
       - ./html:/usr/share/nginx/html:ro
