@@ -80,11 +80,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 릴리즈 워크플로(android/ios)와 같은 버전으로 고정한다. "3.x"는 그때의 최신 stable을 받는데,
+      # 3.47.0-0.0.pre 이후 stable에서는 package:flutter/material.dart가 deprecated라
+      # flutter analyze가 deprecated_member_use info 33건으로 실패했다(실행 43242651275).
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.x"
+          flutter-version: 3.41.6
           channel: stable
+          cache: true
 
       # leeeo_app_core·leeeo_ads는 비공개 저장소 leeeo/leeeo-app의 태그에서 받는다(pubspec.yaml).
       # GITHUB_TOKEN은 다른 비공개 저장소를 읽지 못하므로, 그 저장소의 읽기 전용 deploy key
