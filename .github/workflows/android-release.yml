@@ -8,6 +8,7 @@
 #   · Play 자동 업로드 (docs/05): Secret PLAY_SERVICE_ACCOUNT_JSON (GCP 서비스 계정 JSON)
 #       - 이 시크릿이 없으면 업로드 단계는 자동으로 건너뜀 (빌드/아티팩트는 정상 동작)
 #   · v1은 로컬 우선 모드라 API_URL/GOOGLE_CLIENT_ID dart-define 불필요.
+#   · 비공개 패키지(leeeo/leeeo-app): Secret LEEEO_APP_READ_TOKEN (leeeo-app 읽기 전용 토큰). 없으면 의존성 설치 전에 멈춘다.
 name: Android Release
 
 on:
@@ -49,6 +50,18 @@ jobs:
           keyAlias=${{ secrets.KEY_ALIAS }}
           storeFile=../upload-keystore.jks
           EOF
+
+      # leeeo_app_core·leeeo_ads는 비공개 저장소 leeeo/leeeo-app의 태그에서 받는다(pubspec.yaml).
+      # GITHUB_TOKEN은 다른 비공개 저장소를 읽지 못하므로 읽기 전용 토큰을 그 주소에만 끼워 넣는다(git url.insteadOf).
+      - name: 비공개 leeeo-app 패키지 접근
+        env:
+          LEEEO_APP_READ_TOKEN: ${{ secrets.LEEEO_APP_READ_TOKEN }}
+        run: |
+          if [ -z "$LEEEO_APP_READ_TOKEN" ]; then
+            echo "::error::LEEEO_APP_READ_TOKEN 시크릿이 없습니다. leeeo/leeeo-app 읽기 전용 토큰을 저장소 시크릿으로 넣어야 flutter pub get이 됩니다."
+            exit 1
+          fi
+          git config --global url."https://x-access-token:${LEEEO_APP_READ_TOKEN}@github.com/leeeo/leeeo-app".insteadOf "https://github.com/leeeo/leeeo-app"
 
       - name: 의존성 설치
         run: flutter pub get

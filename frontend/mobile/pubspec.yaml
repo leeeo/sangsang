@@ -44,14 +44,19 @@ dependencies:
   path: ^1.9.0
   # 설정 화면 버전 표시. 10.1+는 win32 6을 요구해 share_plus 10과 충돌하므로 9.x.
   package_info_plus: ^9.0.1
-  # leeeo 공통 앱 틀 (D:/Projects/leeeo-app). 원격 저장소가 아직 없어 이 PC의 경로를 쓴다.
-  # 원격이 생기면 태그 고정(git url + path + ref: leeeo_app_core-v0.1.1 / leeeo_ads-v0.1.1)으로 바꾼다.
-  # 경로 의존성은 GitHub Actions(ci/android-release/ios-release)에서 풀리지 않으므로 main 병합 전에 바꿔야 한다.
+  # leeeo 공통 앱 틀 (github.com/leeeo/leeeo-app, 비공개). 패키지마다 태그로 버전을 고정한다.
+  # 비공개 저장소라 GitHub Actions(ci/android-release/ios-release)는 LEEEO_APP_READ_TOKEN 시크릿으로 받는다.
   leeeo_app_core:
-    path: D:/Projects/leeeo-app/packages/leeeo_app_core
+    git:
+      url: https://github.com/leeeo/leeeo-app.git
+      path: packages/leeeo_app_core
+      ref: leeeo_app_core-v0.1.1
   # 수익화: AdMob (UMP 동의 → iOS ATT → SDK, 배너 + 전면). 단위 ID는 lib/monetization/ad_config.dart
   leeeo_ads:
-    path: D:/Projects/leeeo-app/packages/leeeo_ads
+    git:
+      url: https://github.com/leeeo/leeeo-app.git
+      path: packages/leeeo_ads
+      ref: leeeo_ads-v0.1.1
   # 백업/내보내기: 파일 저장·공유(내보내기) + 파일 선택(가져오기)
   share_plus: ^10.0.0
   file_picker: ^8.1.0

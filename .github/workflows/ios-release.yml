@@ -15,6 +15,7 @@
 #   · 서명은 하지 않는다(--no-codesign). Apple 유료 계정 없이 CI에서 서명할 방법이 없고,
 #     Sideloadly가 프레임워크까지 전부 재서명하므로 미서명 IPA면 충분하다.
 #   · analyze/test 는 ci.yml 이 같은 push에서 병렬로 돌리므로 여기서 중복 실행하지 않는다.
+#   · 비공개 패키지(leeeo/leeeo-app)는 Secret LEEEO_APP_READ_TOKEN(읽기 전용 토큰)으로 받는다. 없으면 의존성 설치 전에 멈춘다.
 #   · iOS AdMob은 아직 테스트 광고 ID다(Info.plist 앱 ID + ad_config.dart 폴백).
 #     실제 광고가 아니므로 도그푸딩 중 광고를 눌러도 계정 정지 위험이 없다.
 name: iOS Unsigned IPA
@@ -52,6 +53,18 @@ jobs:
           channel: stable
           flutter-version: 3.41.6
           cache: true
+
+      # leeeo_app_core·leeeo_ads는 비공개 저장소 leeeo/leeeo-app의 태그에서 받는다(pubspec.yaml).
+      # GITHUB_TOKEN은 다른 비공개 저장소를 읽지 못하므로 읽기 전용 토큰을 그 주소에만 끼워 넣는다(git url.insteadOf).
+      - name: 비공개 leeeo-app 패키지 접근
+        env:
+          LEEEO_APP_READ_TOKEN: ${{ secrets.LEEEO_APP_READ_TOKEN }}
+        run: |
+          if [ -z "$LEEEO_APP_READ_TOKEN" ]; then
+            echo "::error::LEEEO_APP_READ_TOKEN 시크릿이 없습니다. leeeo/leeeo-app 읽기 전용 토큰을 저장소 시크릿으로 넣어야 flutter pub get이 됩니다."
+            exit 1
+          fi
+          git config --global url."https://x-access-token:${LEEEO_APP_READ_TOKEN}@github.com/leeeo/leeeo-app".insteadOf "https://github.com/leeeo/leeeo-app"
 
       - name: 의존성 설치
         run: flutter pub get

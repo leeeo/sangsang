@@ -352,16 +352,20 @@ packages:
   leeeo_ads:
     dependency: "direct main"
     description:
-      path: "D:/Projects/leeeo-app/packages/leeeo_ads"
-      relative: false
-    source: path
+      path: "packages/leeeo_ads"
+      ref: "leeeo_ads-v0.1.1"
+      resolved-ref: a99f4aa82547dd8737813161ddc06def19634359
+      url: "https://github.com/leeeo/leeeo-app.git"
+    source: git
     version: "0.1.1"
   leeeo_app_core:
     dependency: "direct main"
     description:
-      path: "D:/Projects/leeeo-app/packages/leeeo_app_core"
-      relative: false
-    source: path
+      path: "packages/leeeo_app_core"
+      ref: "leeeo_app_core-v0.1.1"
+      resolved-ref: "0d0e8c7155e61b3fa90483bfe9254fb2681f899f"
+      url: "https://github.com/leeeo/leeeo-app.git"
+    source: git
     version: "0.1.1"
   lints:
     dependency: transitive

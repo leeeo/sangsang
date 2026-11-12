@@ -84,6 +84,19 @@ jobs:
           flutter-version: "3.x"
           channel: stable
 
+      # leeeo_app_core·leeeo_ads는 비공개 저장소 leeeo/leeeo-app의 태그에서 받는다(pubspec.yaml).
+      # GITHUB_TOKEN은 다른 비공개 저장소를 읽지 못하므로, leeeo-app 읽기 전용 토큰(저장소 시크릿
+      # LEEEO_APP_READ_TOKEN)을 그 주소에만 끼워 넣는다(git url.insteadOf, 클론 설정에는 남지 않음).
+      - name: Access private leeeo-app packages
+        env:
+          LEEEO_APP_READ_TOKEN: ${{ secrets.LEEEO_APP_READ_TOKEN }}
+        run: |
+          if [ -z "$LEEEO_APP_READ_TOKEN" ]; then
+            echo "::error::LEEEO_APP_READ_TOKEN 시크릿이 없습니다. leeeo/leeeo-app 읽기 전용 토큰을 저장소 시크릿으로 넣어야 flutter pub get이 됩니다."
+            exit 1
+          fi
+          git config --global url."https://x-access-token:${LEEEO_APP_READ_TOKEN}@github.com/leeeo/leeeo-app".insteadOf "https://github.com/leeeo/leeeo-app"
+
       - name: Install dependencies
         run: flutter pub get
 
