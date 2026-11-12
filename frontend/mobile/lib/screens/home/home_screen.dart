@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:leeeo_ads/leeeo_ads.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_config.dart';
 import '../../core/app_theme.dart';
 import '../../models/analytics.dart';
+import '../../monetization/ads.dart';
 import '../../providers/analytics_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../widgets/amount_text.dart';
 import '../../widgets/app_shell.dart';
-import '../../widgets/banner_ad_widget.dart';
 import '../../widgets/record_tile.dart';
 import '../../widgets/delayed_spinner.dart';
 
@@ -73,6 +74,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
               },
             ),
+          IconButton(
+            key: const ValueKey('home-settings'),
+            tooltip: '설정',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
+          ),
         ],
       ),
       body: PageBody(
@@ -151,9 +158,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: const Column(
+      bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [BannerAdWidget(), AppNavigation(index: 0)],
+        children: [LeeeoBannerAd(controller: appAds), const AppNavigation(index: 0)],
       ),
     );
   }

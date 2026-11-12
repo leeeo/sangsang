@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../monetization/ads_manager.dart';
+import '../../monetization/ads.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../widgets/app_shell.dart';
@@ -154,7 +154,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       final messenger = ScaffoldMessenger.of(context);
       Navigator.pop(context, true);
       messenger.showSnackBar(const SnackBar(content: Text('마음을 기록했어요.')));
-      unawaited(AdsManager.instance.onTransactionSaved());
+      unawaited(appAds.maybeShowInterstitial());
     }
   }
 

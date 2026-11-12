@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:leeeo_app_core/leeeo_app_core.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/transaction_provider.dart';
@@ -8,10 +10,11 @@ import 'providers/analytics_provider.dart';
 import 'providers/relationship_provider.dart';
 import 'core/api_client.dart' show navigatorKey;
 import 'core/app_config.dart';
+import 'core/app_info.dart';
 import 'core/app_theme.dart';
 import 'widgets/app_shell.dart';
 import 'widgets/delayed_spinner.dart';
-import 'monetization/ads_manager.dart';
+import 'monetization/ads.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
 import 'screens/backup/backup_screen.dart';
@@ -20,11 +23,19 @@ import 'screens/transactions/transaction_list_screen.dart';
 import 'screens/transactions/transaction_form_screen.dart';
 import 'screens/relationships/relationship_list_screen.dart';
 import 'screens/analytics/analytics_screen.dart';
+import 'screens/settings/settings_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // 저장된 화면 테마(기본: 기기 설정)를 첫 화면 전에 읽어 깜빡임을 막는다. 실패해도 기기 설정으로 동작.
+  final themeController = ThemeModeController();
+  await themeController.load();
+  final appInfo = buildAppInfo(version: await _versionLabel());
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<ThemeModeController>.value(value: themeController),
+        Provider<LeeeoAppConfig>.value(value: appInfo),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
@@ -34,6 +45,17 @@ void main() {
       child: const SangbuSangjoApp(),
     ),
   );
+}
+
+/// `1.1.1 (2)`. 읽지 못하면 null이고 설정의 버전 항목이 숨는다.
+Future<String?> _versionLabel() async {
+  try {
+    final info = await PackageInfo.fromPlatform();
+    return '${info.version} (${info.buildNumber})';
+  } catch (e) {
+    debugPrint('PackageInfo unavailable: $e');
+    return null;
+  }
 }
 
 class SangbuSangjoApp extends StatelessWidget {
@@ -47,6 +69,7 @@ class SangbuSangjoApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
+      themeMode: context.watch<ThemeModeController>().mode,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -66,6 +89,7 @@ class SangbuSangjoApp extends StatelessWidget {
         '/relationships': (_) => const RelationshipListScreen(),
         '/analytics': (_) => const AnalyticsScreen(),
         '/backup': (_) => const BackupScreen(),
+        '/settings': (_) => const SettingsScreen(),
       },
     );
   }
@@ -85,8 +109,8 @@ class _AppEntryPointState extends State<_AppEntryPoint> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 광고 초기화 (UMP 동의 → SDK). 실패해도 앱 흐름을 막지 않는다.
-      AdsManager.instance.init();
+      // 광고 초기화 (UMP 동의 → iOS ATT → SDK). 실패해도 앱 흐름을 막지 않는다.
+      appAds.init();
       _openRecords();
     });
   }

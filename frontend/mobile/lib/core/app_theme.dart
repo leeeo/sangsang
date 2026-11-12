@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:leeeo_app_core/leeeo_app_core.dart';
 
 abstract final class AppColors {
   static const primary = Color(0xFF285C50);
@@ -22,13 +23,22 @@ abstract final class AppColors {
           : received;
 }
 
+/// 상부상조 테마 = leeeo 공통 테마(`LeeeoTheme`) + 상부상조 팔레트 재정의.
+/// 색은 [lightScheme]/[darkScheme], 카드·입력창 등 모양은 `customize`에서 예전 그대로 만든다.
 abstract final class AppTheme {
-  static ThemeData get light => _build(Brightness.light);
-  static ThemeData get dark => _build(Brightness.dark);
+  static final LeeeoThemeConfig config = LeeeoThemeConfig(
+    seedColor: AppColors.primary,
+    lightScheme: _scheme(Brightness.light),
+    darkScheme: _scheme(Brightness.dark),
+    customize: _customize,
+  );
 
-  static ThemeData _build(Brightness brightness) {
+  static ThemeData get light => LeeeoTheme.light(config);
+  static ThemeData get dark => LeeeoTheme.dark(config);
+
+  static ColorScheme _scheme(Brightness brightness) {
     final dark = brightness == Brightness.dark;
-    final scheme = ColorScheme.fromSeed(
+    return ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       brightness: brightness,
     ).copyWith(
@@ -43,15 +53,13 @@ abstract final class AppTheme {
       outline: dark ? const Color(0xFF85998A) : const Color(0xFF7B8B80),
       error: dark ? const Color(0xFFFFB4AB) : AppColors.danger,
     );
+  }
+
+  /// `base`는 LeeeoTheme이 만든 테마(Material 3, 48dp 터치 규칙, 위 팔레트).
+  static ThemeData _customize(ThemeData base, Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    final scheme = base.colorScheme;
     final canvas = dark ? const Color(0xFF17231F) : AppColors.canvas;
-    // Desktop browsers default to compact density and shrink-wrapped tap
-    // targets; keep the 48dp mobile touch contract on every platform.
-    final base = ThemeData(
-      useMaterial3: true,
-      colorScheme: scheme,
-      visualDensity: VisualDensity.standard,
-      materialTapTargetSize: MaterialTapTargetSize.padded,
-    );
     return base.copyWith(
       scaffoldBackgroundColor: canvas,
       textTheme: base.textTheme.copyWith(

@@ -6,7 +6,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:leeeo_app_core/leeeo_app_core.dart';
 import 'package:provider/provider.dart';
+import 'package:sangbu_sangjo/core/app_info.dart';
 import 'package:sangbu_sangjo/core/app_theme.dart';
 import 'package:sangbu_sangjo/models/analytics.dart';
 import 'package:sangbu_sangjo/models/category.dart';
@@ -23,6 +25,7 @@ import 'package:sangbu_sangjo/screens/backup/backup_screen.dart';
 import 'package:sangbu_sangjo/screens/home/home_screen.dart';
 import 'package:sangbu_sangjo/screens/relationships/relationship_form_screen.dart';
 import 'package:sangbu_sangjo/screens/relationships/relationship_list_screen.dart';
+import 'package:sangbu_sangjo/screens/settings/settings_screen.dart';
 import 'package:sangbu_sangjo/screens/transactions/transaction_form_screen.dart';
 import 'package:sangbu_sangjo/screens/transactions/transaction_list_screen.dart';
 import 'package:sangbu_sangjo/widgets/app_shell.dart';
@@ -129,6 +132,7 @@ void main() {
     'person-form': const RelationshipFormScreen(),
     'profile': const ProfileSetupScreen(),
     'backup': const BackupScreen(),
+    'settings': const SettingsScreen(),
   };
 
   setUpAll(() async {
@@ -143,7 +147,7 @@ void main() {
 
   Future<GlobalKey> mount(WidgetTester tester, Widget screen, {
     double width = 390, bool dark = false, double scale = 1,
-    _Records? records, bool empty = false,
+    _Records? records, bool empty = false, ThemeModeController? themeMode,
   }) async {
     tester.view.physicalSize = Size(width, width > 600 ? 1000 : 844);
     tester.view.devicePixelRatio = 1;
@@ -171,6 +175,9 @@ void main() {
         ChangeNotifierProvider<TransactionProvider>.value(value: records ?? _Records()),
         ChangeNotifierProvider<AnalyticsProvider>.value(value: _Summary(empty: empty)),
         ChangeNotifierProvider<RelationshipProvider>.value(value: _People()),
+        ChangeNotifierProvider<ThemeModeController>.value(
+            value: themeMode ?? ThemeModeController(store: MemoryThemeModeStore())),
+        Provider<LeeeoAppConfig>.value(value: buildAppInfo(version: '1.1.1 (2)')),
       ],
       child: RepaintBoundary(
         key: captureKey,
@@ -236,6 +243,27 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }
+
+  testWidgets('settings shows the shared about items and stores the theme choice', (tester) async {
+    final store = MemoryThemeModeStore();
+    final themeMode = ThemeModeController(store: store);
+    await mount(tester, const SettingsScreen(), themeMode: themeMode);
+    for (final item in ['privacy', 'terms', 'feedback', 'licenses', 'version']) {
+      expect(find.byKey(ValueKey('leeeo.settings.$item')), findsOneWidget, reason: item);
+    }
+    expect(find.text('1.1.1 (2)'), findsOneWidget);
+    // UMP가 요구하지 않으면(광고 미초기화 포함) 광고 개인정보 설정은 숨는다.
+    expect(find.byKey(const ValueKey('leeeo.ads.privacy_options')), findsNothing);
+    await tester.tap(find.text('어둡게'));
+    await tester.pumpAndSettle();
+    expect(themeMode.mode, ThemeMode.dark);
+    expect(store.value, ThemeMode.dark);
+  });
+
+  testWidgets('home offers the settings entry', (tester) async {
+    await mount(tester, const HomeScreen());
+    expect(find.byKey(const ValueKey('home-settings')), findsOneWidget);
+  });
 
   testWidgets('empty home keeps a usable record action', (tester) async {
     final records = _Records()..values.clear();

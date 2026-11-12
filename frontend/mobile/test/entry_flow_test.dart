@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:leeeo_app_core/leeeo_app_core.dart';
 import 'package:provider/provider.dart';
 import 'package:sangbu_sangjo/core/app_theme.dart';
 import 'package:sangbu_sangjo/main.dart';
@@ -189,8 +190,12 @@ void main() {
 
   testWidgets('startup read failure can retry without resetting user data', (tester) async {
     final auth = _StartupAuth();
-    await tester.pumpWidget(ChangeNotifierProvider<AuthProvider>.value(
-      value: auth,
+    await tester.pumpWidget(MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthProvider>.value(value: auth),
+        ChangeNotifierProvider<ThemeModeController>.value(
+            value: ThemeModeController(store: MemoryThemeModeStore())),
+      ],
       child: const SangbuSangjoApp(),
     ));
     auth.completion.completeError(StateError('Read failed'));
