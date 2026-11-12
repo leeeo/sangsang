@@ -8,7 +8,8 @@
 #   · Play 자동 업로드 (docs/05): Secret PLAY_SERVICE_ACCOUNT_JSON (GCP 서비스 계정 JSON)
 #       - 이 시크릿이 없으면 업로드 단계는 자동으로 건너뜀 (빌드/아티팩트는 정상 동작)
 #   · v1은 로컬 우선 모드라 API_URL/GOOGLE_CLIENT_ID dart-define 불필요.
-#   · 비공개 패키지(leeeo/leeeo-app): Secret LEEEO_APP_READ_TOKEN (leeeo-app 읽기 전용 토큰). 없으면 의존성 설치 전에 멈춘다.
+#   · 비공개 패키지(leeeo/leeeo-app): Secret LEEEO_APP_DEPLOY_KEY (그 저장소 읽기 전용 deploy key 개인키).
+#       없으면 의존성 설치 전에 멈춘다. 복구용 사본: Bitwarden Secrets Manager leeeo-pc / sangsang/LEEEO_APP_DEPLOY_KEY.
 name: Android Release
 
 on:
@@ -52,16 +53,26 @@ jobs:
           EOF
 
       # leeeo_app_core·leeeo_ads는 비공개 저장소 leeeo/leeeo-app의 태그에서 받는다(pubspec.yaml).
-      # GITHUB_TOKEN은 다른 비공개 저장소를 읽지 못하므로 읽기 전용 토큰을 그 주소에만 끼워 넣는다(git url.insteadOf).
-      - name: 비공개 leeeo-app 패키지 접근
+      # GITHUB_TOKEN은 다른 비공개 저장소를 읽지 못하므로 그 저장소의 읽기 전용 deploy key로 SSH로 받는다.
+      - name: 비공개 leeeo-app 패키지 접근 (읽기 전용 deploy key)
         env:
-          LEEEO_APP_READ_TOKEN: ${{ secrets.LEEEO_APP_READ_TOKEN }}
+          LEEEO_APP_DEPLOY_KEY: ${{ secrets.LEEEO_APP_DEPLOY_KEY }}
         run: |
-          if [ -z "$LEEEO_APP_READ_TOKEN" ]; then
-            echo "::error::LEEEO_APP_READ_TOKEN 시크릿이 없습니다. leeeo/leeeo-app 읽기 전용 토큰을 저장소 시크릿으로 넣어야 flutter pub get이 됩니다."
+          set -euo pipefail
+          if [ -z "${LEEEO_APP_DEPLOY_KEY:-}" ]; then
+            echo "::error::LEEEO_APP_DEPLOY_KEY 시크릿이 없습니다. leeeo/leeeo-app 읽기 전용 deploy key가 있어야 flutter pub get이 됩니다."
             exit 1
           fi
-          git config --global url."https://x-access-token:${LEEEO_APP_READ_TOKEN}@github.com/leeeo/leeeo-app".insteadOf "https://github.com/leeeo/leeeo-app"
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$LEEEO_APP_DEPLOY_KEY" > ~/.ssh/leeeo_app_deploy
+          chmod 600 ~/.ssh/leeeo_app_deploy
+          # github.com 호스트 키는 api.github.com/meta의 공개 값으로 고정한다(ssh-keyscan을 믿지 않음).
+          printf '%s\n' 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > ~/.ssh/known_hosts_leeeo_app
+          chmod 600 ~/.ssh/known_hosts_leeeo_app
+          git config --global core.sshCommand "ssh -i ~/.ssh/leeeo_app_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts_leeeo_app -o BatchMode=yes"
+          git config --global url."git@github.com:leeeo/leeeo-app".insteadOf "https://github.com/leeeo/leeeo-app"
+          # 키가 폐기됐거나 잘못 들어온 경우 의존성 설치보다 먼저, 읽을 수 있는 오류로 멈춘다.
+          git ls-remote https://github.com/leeeo/leeeo-app.git refs/tags/leeeo_app_core-v0.1.1 > /dev/null
 
       - name: 의존성 설치
         run: flutter pub get

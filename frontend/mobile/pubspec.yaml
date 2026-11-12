@@ -45,7 +45,8 @@ dependencies:
   # 설정 화면 버전 표시. 10.1+는 win32 6을 요구해 share_plus 10과 충돌하므로 9.x.
   package_info_plus: ^9.0.1
   # leeeo 공통 앱 틀 (github.com/leeeo/leeeo-app, 비공개). 패키지마다 태그로 버전을 고정한다.
-  # 비공개 저장소라 GitHub Actions(ci/android-release/ios-release)는 LEEEO_APP_READ_TOKEN 시크릿으로 받는다.
+  # 비공개 저장소라 GitHub Actions(ci/android-release/ios-release)는 읽기 전용 deploy key
+  # (시크릿 LEEEO_APP_DEPLOY_KEY)로 SSH로 받는다. 이 PC는 기존 https 인증을 그대로 쓴다.
   leeeo_app_core:
     git:
       url: https://github.com/leeeo/leeeo-app.git
