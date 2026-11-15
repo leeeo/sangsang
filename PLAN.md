@@ -54,7 +54,7 @@
 
 ## Phase 5 — 릴리스 빌드 ✅ 완료 (2026-07-21)
 
-- [x] `flutter build appbundle --release` → **app-release.aab 52.2MB, 서명 CN=Eojin Lee 확인**
+- [x] `flutter build appbundle --release` → **app-release.aab 52.2MB, 업로드 키 서명 확인**
 - [ ] (선택) CI: GitHub Secrets 4개(`KEYSTORE_BASE64` 등) 등록 → 태그 `v1.0.0` push → 서명 AAB 아티팩트
 
 ## Phase 6 — Play Console 제출 ✅ 심사 제출 완료 (2026-07-21)
