@@ -1,3 +1,27 @@
 User-agent: *
 Allow: /
 Sitemap: https://sangsang.leeeo.app/sitemap.xml
+
+# BEGIN leeeo AI crawler policy (2026-11-19): no AI training crawling.
+# Search engines (Googlebot, Yeti, Bingbot, Daum) and AI search (OAI-SearchBot, Claude-SearchBot, PerplexityBot) follow the group above.
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: anthropic-ai
+User-agent: CCBot
+User-agent: Bytespider
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Amazonbot
+User-agent: meta-externalagent
+User-agent: FacebookBot
+User-agent: cohere-ai
+User-agent: cohere-training-data-crawler
+User-agent: Diffbot
+User-agent: Omgilibot
+User-agent: Timpibot
+User-agent: YouBot
+User-agent: ImagesiftBot
+User-agent: AI2Bot
+User-agent: PanguBot
+Disallow: /
+# END leeeo AI crawler policy

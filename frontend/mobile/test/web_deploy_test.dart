@@ -42,4 +42,13 @@ void main() {
       'Strict-Transport-Security',
     ]);
   });
+
+  test('web robots.txt blocks AI training crawlers and lets AI search crawlers through (CEO decision 2026-11-18)', () {
+    final lines = _read('web/robots.txt').split('\n');
+    expect(lines, containsAll(['User-agent: GPTBot', 'User-agent: ClaudeBot', 'User-agent: CCBot', 'User-agent: Google-Extended']));
+    for (final bot in ['OAI-SearchBot', 'Claude-SearchBot', 'PerplexityBot']) {
+      expect(lines.contains('User-agent: $bot'), isFalse, reason: bot);
+    }
+    expect(lines.where((line) => line == 'Disallow: /').length, 1);
+  });
 }
