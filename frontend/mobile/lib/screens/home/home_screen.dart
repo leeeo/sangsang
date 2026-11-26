@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:leeeo_ads/leeeo_ads.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_config.dart';
 import '../../core/app_theme.dart';
 import '../../models/analytics.dart';
-import '../../monetization/ads.dart';
 import '../../providers/analytics_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/category_provider.dart';
@@ -94,6 +92,19 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 8),
               Text('챙겨준 마음도, 전한 마음도 잊지 않도록.',
                   style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 16)),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                key: const ValueKey('home-add-record'),
+                onPressed: _addRecord,
+                icon: const Icon(Icons.add),
+                label: const Text('경조사비 기록'),
+              ),
+              if (AppConfig.isLocal)
+                TextButton(
+                  onPressed: () => Navigator.pushNamed(context, '/backup'),
+                  child: const Text('이 기기에만 저장 · JSON으로 백업하고 복원',
+                      textAlign: TextAlign.center),
+                ),
               const SizedBox(height: 24),
               Row(
                 children: [
@@ -112,13 +123,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 AppErrorState(message: analytics.summaryError!, onRetry: _refresh)
               else if (analytics.summary != null)
                 _MonthOverview(summary: analytics.summary!),
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                key: const ValueKey('home-add-record'),
-                onPressed: _addRecord,
-                icon: const Icon(Icons.add),
-                label: const Text('마음 기록'),
-              ),
               const SizedBox(height: 28),
               Row(
                 children: [
@@ -146,22 +150,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ))
               else
                 ...records.items.map((record) => RecordTile(record: record)),
-              if (AppConfig.isLocal) ...[
-                const SizedBox(height: 16),
-                TextButton.icon(
-                  onPressed: () => Navigator.pushNamed(context, '/backup'),
-                  icon: const Icon(Icons.shield_outlined, size: 18),
-                  label: const Text('소중한 기록, 백업으로 지켜두세요'),
-                ),
-              ],
             ],
           ),
         ),
       ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [LeeeoBannerAd(controller: appAds), const AppNavigation(index: 0)],
-      ),
+      bottomNavigationBar: const AppNavigation(index: 0),
     );
   }
 }

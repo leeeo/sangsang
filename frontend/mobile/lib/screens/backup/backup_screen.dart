@@ -226,10 +226,11 @@ class _Notice extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '기록은 이 기기·브라우저에만 저장돼요.\n'
+              '기록은 이 기기·브라우저에만 저장돼요. '
+              '백업한 JSON 파일로 복원할 수 있어요.\n'
               '휴대폰 분실·앱 삭제·브라우저 데이터 삭제 시 '
               '백업 없이는 복구할 수 없어요.\n'
-              '백업 파일은 다른 기기나 안전한 드라이브에 보관해 주세요.',
+              '파일에는 이름과 금액 등 기록이 들어 있으니 안전한 곳에 보관해 주세요.',
               style: TextStyle(fontSize: 15, color: Theme.of(context).colorScheme.onPrimaryContainer, height: 1.5),
             ),
           ),

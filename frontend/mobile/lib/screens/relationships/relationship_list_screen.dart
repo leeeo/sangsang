@@ -90,7 +90,10 @@ class _RelationshipListScreenState extends State<RelationshipListScreen> {
                         Text('마음은 사람 곁에 남아요.',
                             style: Theme.of(context).textTheme.titleLarge),
                         const SizedBox(height: 8),
-                        const Text('함께한 사람을 찾아 다음 마음을 기록해 보세요.'),
+                        const Text(
+                          '같은 이름의 기록을 모아 보여줘요. 동명이인은 '
+                          '김민수 (직장), 김민수 (친구)처럼 구분해 기록해 주세요.',
+                        ),
                         const SizedBox(height: 24),
                         TextField(
                           key: const ValueKey('people-search'),

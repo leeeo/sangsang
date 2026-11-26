@@ -44,6 +44,8 @@ class _Categories extends CategoryProvider {
     Category(id: 'sys-10', name: '결혼 축의금 수령', type: 'income', isSystem: true),
   ];
   @override
+  List<Category> get categories => values;
+  @override
   List<Category> get expenseCategories => values.where((c) => c.type == 'expense').toList();
   @override
   List<Category> get incomeCategories => values.where((c) => c.type == 'income').toList();
@@ -63,6 +65,7 @@ class _Records extends TransactionProvider {
         counterpartyName: '박지훈', eventType: 'wedding', memo: '함께해 줘서 고마웠던 날'),
   ];
   String? lastType;
+  int? lastLimit;
   String? failure;
   bool deleteSuccess = false;
 
@@ -79,6 +82,7 @@ class _Records extends TransactionProvider {
     int skip = 0, int limit = 20, String? type, bool append = false,
   }) async {
     lastType = type;
+    lastLimit = limit;
     notifyListeners();
   }
 
@@ -286,14 +290,27 @@ void main() {
     await mount(tester, const TransactionListScreen(), records: records);
     await tester.tap(find.byKey(const ValueKey('filter-income')));
     await tester.pumpAndSettle();
-    expect(records.lastType, 'income');
+    expect(records.lastType, isNull);
+    expect(records.lastLimit, -1);
+    expect(find.text('결과 1건 · 합계 150,000원'), findsOneWidget);
     final refresh = tester.state<RefreshIndicatorState>(find.byType(RefreshIndicator)).show();
     await tester.pumpAndSettle();
     await refresh;
-    expect(records.lastType, 'income');
+    expect(find.text('결과 1건 · 합계 150,000원'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('list-add-record')));
     await tester.pumpAndSettle();
     expect(tester.widget<TransactionFormScreen>(find.byType(TransactionFormScreen)).initialType, 'income');
+  });
+
+  testWidgets('save remains on screen at 390 even with a keyboard inset', (tester) async {
+    await mount(tester, const TransactionFormScreen(), width: 390);
+    final save = find.byKey(const ValueKey('record-save'));
+    expect(save.hitTestable(), findsOneWidget);
+    expect(tester.getSize(save).height, greaterThanOrEqualTo(44));
+    tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpAndSettle();
+    expect(save.hitTestable(), findsOneWidget);
   });
 
   testWidgets('failed deletion leaves the record visible and reports the failure', (tester) async {

@@ -1,9 +1,6 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../monetization/ads.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../widgets/app_shell.dart';
@@ -39,12 +36,15 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   bool _isSubmitting = false;
   bool _saved = false;
 
-  bool get _hasChanges => !_saved && (
-    _amountCtrl.text.isNotEmpty || _memoCtrl.text.isNotEmpty ||
-    _counterpartyCtrl.text != (widget.initialCounterpartyName ?? '') ||
-    _type != widget.initialType || _categoryId != null || _eventType != null ||
-    !DateUtils.isSameDay(_date, _initialDate)
-  );
+  bool get _hasChanges =>
+      !_saved &&
+      (_amountCtrl.text.isNotEmpty ||
+          _memoCtrl.text.isNotEmpty ||
+          _counterpartyCtrl.text != (widget.initialCounterpartyName ?? '') ||
+          _type != widget.initialType ||
+          _categoryId != null ||
+          _eventType != null ||
+          !DateUtils.isSameDay(_date, _initialDate));
 
   static const _eventTypes = {
     '': '선택 안 함',
@@ -154,7 +154,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       final messenger = ScaffoldMessenger.of(context);
       Navigator.pop(context, true);
       messenger.showSnackBar(const SnackBar(content: Text('마음을 기록했어요.')));
-      unawaited(appAds.maybeShowInterstitial());
     }
   }
 
@@ -169,215 +168,285 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       hasChanges: _hasChanges,
       saving: _isSubmitting,
       child: Scaffold(
-      appBar: AppBar(title: const Text('마음 기록')),
-      body: SafeArea(
-        child: PageBody(
-          maxWidth: 640,
-          child: Form(
-            key: _formKey,
-            onChanged: () => setState(() {}),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('누구와 나눈 마음인가요?', style: theme.textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Text(
-                    '함께한 사람을 기록해요.\n다음에 꺼내볼 수 있어요.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  TextFormField(
-                    key: const ValueKey('record-person'),
-                    controller: _counterpartyCtrl,
-                    enabled: !_isSubmitting,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: '함께한 사람 (선택)',
-                      floatingLabelBehavior: FloatingLabelBehavior.always,
-                      hintText: '이름 또는 별명',
-                      prefixIcon: Icon(Icons.person_outline),
-                    ),
-                    validator: (value) => (value?.trim().length ?? 0) > 100
-                        ? '이름은 100자 이내로 입력해 주세요.'
-                        : null,
-                  ),
-                  const SizedBox(height: 24),
-                  Text('마음의 방향', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
-                    children: [
-                      for (final direction in const {
-                        'expense': '보낸 마음',
-                        'income': '받은 마음',
-                      }.entries)
-                        ChoiceChip(
-                          key: ValueKey('record-direction-${direction.key}'),
-                          label: Text(direction.value),
-                          avatar: Icon(direction.key == 'expense'
-                              ? Icons.north_east
-                              : Icons.south_west),
-                          selected: _type == direction.key,
-                          onSelected: _isSubmitting ? null : (selected) {
-                            if (selected && direction.key != _type) {
-                              setState(() {
-                                _type = direction.key;
-                                _categoryId = null;
-                              });
-                            }
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  TextFormField(
-                    key: const ValueKey('record-amount'),
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    controller: _amountCtrl,
-                    enabled: !_isSubmitting,
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(
-                      labelText: '금액',
-                      floatingLabelBehavior: FloatingLabelBehavior.always,
-                      hintText: '예: 50,000',
-                      suffixText: '원',
-                      helperText: _amountHelp,
-                      helperMaxLines: 2,
-                      errorMaxLines: 3,
-                    ),
-                    validator: _validateAmount,
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final amount in const [30000, 50000, 100000, 200000])
-                        OutlinedButton(
-                          key: ValueKey('record-quick-$amount'),
-                          onPressed: _isSubmitting ? null : () {
-                            final text = NumberFormat('#,###').format(amount);
-                            setState(() {
-                              _amountCtrl.value = TextEditingValue(
-                                text: text,
-                                selection: TextSelection.collapsed(offset: text.length),
-                              );
-                            });
-                          },
-                          child: Text('${amount ~/ 10000}만 원'),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  KeyedSubtree(
-                    key: ValueKey('category-direction-$_type'),
-                    child: DropdownButtonFormField<String>(
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      key: const ValueKey('record-category'),
-                      initialValue: _categoryId,
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        labelText: '마음의 분류',
-                        floatingLabelBehavior: FloatingLabelBehavior.always,
-                        errorMaxLines: 3,
+        appBar: AppBar(title: const Text('경조사비 기록')),
+        body: Column(
+          children: [
+            Expanded(
+              child: SafeArea(
+                bottom: false,
+                child: PageBody(
+                  maxWidth: 640,
+                  child: Form(
+                    key: _formKey,
+                    onChanged: () => setState(() {}),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 8,
+                            children: [
+                              for (final direction in const {
+                                'expense': '보낸 마음',
+                                'income': '받은 마음',
+                              }.entries)
+                                ChoiceChip(
+                                  key: ValueKey(
+                                    'record-direction-${direction.key}',
+                                  ),
+                                  label: Text(direction.value),
+                                  avatar: Icon(
+                                    direction.key == 'expense'
+                                        ? Icons.north_east
+                                        : Icons.south_west,
+                                  ),
+                                  selected: _type == direction.key,
+                                  onSelected: _isSubmitting
+                                      ? null
+                                      : (selected) {
+                                          if (selected &&
+                                              direction.key != _type) {
+                                            setState(() {
+                                              _type = direction.key;
+                                              _categoryId = null;
+                                            });
+                                          }
+                                        },
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            key: const ValueKey('record-amount'),
+                            autovalidateMode:
+                                AutovalidateMode.onUserInteraction,
+                            controller: _amountCtrl,
+                            enabled: !_isSubmitting,
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            decoration: InputDecoration(
+                              labelText: '금액',
+                              floatingLabelBehavior:
+                                  FloatingLabelBehavior.always,
+                              hintText: '예: 50,000',
+                              suffixText: '원',
+                              helperText: _amountHelp,
+                              helperMaxLines: 2,
+                              errorMaxLines: 3,
+                            ),
+                            validator: _validateAmount,
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final amount in const [
+                                30000,
+                                50000,
+                                100000,
+                                200000,
+                              ])
+                                OutlinedButton(
+                                  key: ValueKey('record-quick-$amount'),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                    minimumSize: const Size(64, 48),
+                                  ),
+                                  onPressed: _isSubmitting
+                                      ? null
+                                      : () {
+                                          final text = NumberFormat(
+                                            '#,###',
+                                          ).format(amount);
+                                          setState(() {
+                                            _amountCtrl.value =
+                                                TextEditingValue(
+                                                  text: text,
+                                                  selection:
+                                                      TextSelection.collapsed(
+                                                        offset: text.length,
+                                                      ),
+                                                );
+                                          });
+                                        },
+                                  child: Text('${amount ~/ 10000}만 원'),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          KeyedSubtree(
+                            key: ValueKey('category-direction-$_type'),
+                            child: DropdownButtonFormField<String>(
+                              autovalidateMode:
+                                  AutovalidateMode.onUserInteraction,
+                              key: const ValueKey('record-category'),
+                              initialValue: _categoryId,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                labelText: '장부 분류 (필수)',
+                                floatingLabelBehavior:
+                                    FloatingLabelBehavior.always,
+                                errorMaxLines: 3,
+                              ),
+                              hint: const Text('분류 선택'),
+                              items: categories
+                                  .map(
+                                    (category) => DropdownMenuItem(
+                                      value: category.id,
+                                      child: Text(
+                                        category.displayName,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: _isSubmitting || provider.isLoading
+                                  ? null
+                                  : (value) =>
+                                        setState(() => _categoryId = value),
+                              validator: (value) =>
+                                  value == null ? '장부 분류를 선택해 주세요.' : null,
+                            ),
+                          ),
+                          if (provider.isLoading) ...[
+                            const SizedBox(height: 8),
+                            const LinearProgressIndicator(),
+                          ] else if (_categoryError || categories.isEmpty) ...[
+                            const SizedBox(height: 8),
+                            const Text('분류를 불러오지 못했어요. 다시 불러온 뒤 선택해 주세요.'),
+                            TextButton.icon(
+                              onPressed: _loadCategories,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('분류 다시 불러오기'),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            key: const ValueKey('record-person'),
+                            controller: _counterpartyCtrl,
+                            enabled: !_isSubmitting,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: '함께한 사람 (선택)',
+                              hintText: '예: 김민수 (직장), 김민수 (친구)',
+                            ),
+                            validator: (value) =>
+                                (value?.trim().length ?? 0) > 100
+                                ? '이름은 100자 이내로 입력해 주세요.'
+                                : null,
+                          ),
+                          const SizedBox(height: 16),
+                          OutlinedButton.icon(
+                            key: const ValueKey('record-date'),
+                            onPressed: _isSubmitting ? null : _pickDate,
+                            icon: const Icon(Icons.calendar_today_outlined),
+                            label: Text(
+                              '날짜  ${DateFormat('yyyy년 M월 d일').format(_date)}',
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          Text(
+                            '기억하고 싶은 이야기',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          const Text('장부 분류와 별개로, 구체적인 행사나 메모를 남길 수 있어요.'),
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            key: const ValueKey('record-event'),
+                            initialValue: _eventType ?? '',
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              labelText: '행사 종류 (선택)',
+                              floatingLabelBehavior:
+                                  FloatingLabelBehavior.always,
+                            ),
+                            items: _eventTypes.entries
+                                .map(
+                                  (event) => DropdownMenuItem(
+                                    value: event.key,
+                                    child: Text(event.value),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: _isSubmitting
+                                ? null
+                                : (value) {
+                                    setState(
+                                      () => _eventType =
+                                          value == null || value.isEmpty
+                                          ? null
+                                          : value,
+                                    );
+                                  },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            key: const ValueKey('record-memo'),
+                            controller: _memoCtrl,
+                            enabled: !_isSubmitting,
+                            minLines: 2,
+                            maxLines: 4,
+                            decoration: const InputDecoration(
+                              labelText: '기억할 내용 (선택)',
+                              floatingLabelBehavior:
+                                  FloatingLabelBehavior.always,
+                              hintText: '예: 오랜만에 만나 반가웠던 날',
+                            ),
+                          ),
+                        ],
                       ),
-                      hint: const Text('분류 선택'),
-                      items: categories.map((category) => DropdownMenuItem(
-                        value: category.id,
-                        child: Text(category.displayName,
-                            overflow: TextOverflow.ellipsis),
-                      )).toList(),
-                      onChanged: _isSubmitting || provider.isLoading
-                          ? null
-                          : (value) => setState(() => _categoryId = value),
-                      validator: (value) => value == null
-                          ? '마음의 분류를 선택해 주세요.'
-                          : null,
                     ),
                   ),
-                  if (provider.isLoading) ...[
-                    const SizedBox(height: 8),
-                    const LinearProgressIndicator(),
-                  ] else if (_categoryError || categories.isEmpty) ...[
-                    const SizedBox(height: 8),
-                    const Text('분류를 불러오지 못했어요. 다시 불러온 뒤 선택해 주세요.'),
-                    TextButton.icon(
-                      onPressed: _loadCategories,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('분류 다시 불러오기'),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    key: const ValueKey('record-date'),
-                    onPressed: _isSubmitting ? null : _pickDate,
-                    icon: const Icon(Icons.calendar_today_outlined),
-                    label: Text('날짜  ${DateFormat('yyyy년 M월 d일').format(_date)}'),
-                  ),
-                  const SizedBox(height: 32),
-                  Text('기억하고 싶은 이야기', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  const Text('경조사와 메모는 필요할 때만 남겨 주세요.'),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    key: const ValueKey('record-event'),
-                    initialValue: _eventType ?? '',
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: '어떤 자리였나요? (선택)',
-                      floatingLabelBehavior: FloatingLabelBehavior.always,
-                    ),
-                    items: _eventTypes.entries.map((event) => DropdownMenuItem(
-                      value: event.key,
-                      child: Text(event.value),
-                    )).toList(),
-                    onChanged: _isSubmitting ? null : (value) {
-                      setState(() => _eventType =
-                          value == null || value.isEmpty ? null : value);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    key: const ValueKey('record-memo'),
-                    controller: _memoCtrl,
-                    enabled: !_isSubmitting,
-                    minLines: 2,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      labelText: '기억할 내용 (선택)',
-                      floatingLabelBehavior: FloatingLabelBehavior.always,
-                      hintText: '예: 오랜만에 만나 반가웠던 날',
-                    ),
-                  ),
-                  if (_saveError != null) ...[
-                    const SizedBox(height: 16),
-                    Semantics(
-                      liveRegion: true,
-                      child: Text(_saveError!,
-                          style: TextStyle(color: theme.colorScheme.error)),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
-                    key: const ValueKey('record-save'),
-                    onPressed: _isSubmitting ? null : _submit,
-                    icon: _isSubmitting
-                        ? const DelayedSpinner()
-                        : const Icon(Icons.check),
-                    label: Text(_isSubmitting ? '저장하는 중' : '마음 기록하기'),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
+            SafeArea(
+              top: false,
+              child: PageBody(
+                maxWidth: 640,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_saveError != null) ...[
+                        Semantics(
+                          liveRegion: true,
+                          child: Text(
+                            _saveError!,
+                            style: TextStyle(color: theme.colorScheme.error),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      FilledButton.icon(
+                        key: const ValueKey('record-save'),
+                        onPressed: _isSubmitting ? null : _submit,
+                        icon: _isSubmitting
+                            ? const DelayedSpinner()
+                            : const Icon(Icons.check),
+                        label: Text(
+                          _isSubmitting
+                              ? '저장하는 중'
+                              : _type == 'expense'
+                              ? '보낸 경조사비 저장'
+                              : '받은 경조사비 저장',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-    ));
+    );
   }
 }
