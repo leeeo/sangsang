@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:leeeo_ads/leeeo_ads.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_config.dart';
 import '../../core/app_theme.dart';
 import '../../models/analytics.dart';
+import '../../monetization/ads.dart';
 import '../../providers/analytics_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/category_provider.dart';
@@ -154,7 +156,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: const AppNavigation(index: 0),
+      bottomNavigationBar: records.items.isEmpty
+          ? const AppNavigation(index: 0)
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [LeeeoBannerAd(controller: appAds), const AppNavigation(index: 0)],
+            ),
     );
   }
 }
