@@ -14,6 +14,7 @@ import '../../widgets/amount_text.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/record_tile.dart';
 import '../../widgets/delayed_spinner.dart';
+import '../reminders/reminder_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -49,6 +50,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) await _refresh();
   }
 
+  Future<void> _openBackup() async {
+    await Navigator.pushNamed(context, '/backup');
+    if (mounted) await _refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
@@ -61,9 +67,17 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           if (AppConfig.isLocal)
             IconButton(
+              tooltip: '경조사 알림',
+              icon: const Icon(Icons.notifications_none_outlined),
+              onPressed: () => Navigator.push<void>(context, MaterialPageRoute(
+                builder: (_) => const ReminderScreen(),
+              )),
+            ),
+          if (AppConfig.isLocal)
+            IconButton(
               tooltip: '기록 백업',
               icon: const Icon(Icons.backup_outlined),
-              onPressed: () => Navigator.pushNamed(context, '/backup'),
+              onPressed: _openBackup,
             ),
           if (!AppConfig.isLocal)
             IconButton(
@@ -103,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               if (AppConfig.isLocal)
                 TextButton(
-                  onPressed: () => Navigator.pushNamed(context, '/backup'),
+                  onPressed: _openBackup,
                   child: const Text('이 기기에만 저장 · JSON으로 백업하고 복원',
                       textAlign: TextAlign.center),
                 ),

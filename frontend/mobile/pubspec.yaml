@@ -61,6 +61,9 @@ dependencies:
   # 백업/내보내기: 파일 저장·공유(내보내기) + 파일 선택(가져오기)
   share_plus: ^10.0.0
   file_picker: ^8.1.0
+  # XLSX 가져오기: 크기를 제한한 ZIP 압축 해제와 XML 파싱.
+  archive: 4.6.0
+  xml: 7.0.1
   path_provider: ^2.1.0
   sqflite_common_ffi_web: ^1.1.1
   web: ^1.1.1

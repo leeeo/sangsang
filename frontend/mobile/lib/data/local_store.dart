@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
+import 'backup_format.dart';
+import 'ledger_import.dart';
 import 'web_db_factory.dart';
 
 /// 로컬 우선 모드(APP_MODE=local)의 데이터 저장소 (기기 내 SQLite).
@@ -259,6 +261,52 @@ class LocalStore {
     await db.delete('transactions', where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<Set<LedgerKey>> existingLedgerKeys() async =>
+      _ledgerKeys(await _database);
+
+  Future<Set<LedgerKey>> _ledgerKeys(DatabaseExecutor db) async => {
+    for (final row in await db.query('transactions', columns: [
+      'transaction_date', 'counterparty_name', 'amount', 'type',
+    ])) ledgerKeyFromRow(row),
+  };
+
+  Future<({int added, int skipped, int invalid})> importLedger(
+    List<ImportRow> rows, {required bool skipDuplicates}
+  ) async {
+    final db = await _database;
+    return db.transaction((txn) async {
+      final seen = skipDuplicates ? await _ledgerKeys(txn) : <LedgerKey>{};
+      var added = 0, skipped = 0, invalid = 0;
+      final batch = txn.batch();
+      for (final row in rows) {
+        final key = row.key;
+        if (key == null) {
+          invalid++;
+          continue;
+        }
+        if (!seen.add(key) && skipDuplicates) {
+          skipped++;
+          continue;
+        }
+        final now = _nowIso();
+        batch.insert('transactions', {
+          'id': _newId(), 'category_id': row.categoryId, 'amount': key.amount,
+          'type': key.direction, 'transaction_date': key.date,
+          'counterparty_name': _emptyToNull(row.person),
+          'memo': _emptyToNull(row.memo), 'created_at': now,
+        });
+        if (row.person.isNotEmpty) {
+          batch.insert('relationships', {
+            'id': _newId(), 'counterparty_name': row.person, 'created_at': now,
+          }, conflictAlgorithm: ConflictAlgorithm.ignore);
+        }
+        added++;
+      }
+      await batch.commit(noResult: true);
+      return (added: added, skipped: skipped, invalid: invalid);
+    });
+  }
+
   Map<String, dynamic> _transactionJson(Map<String, Object?> r) => {
         'id': r['id'],
         'user_id': localUserId,
@@ -482,9 +530,7 @@ class LocalStore {
   ///   - profile/transactions: id 기준 replace (재-import 시 중복 없음)
   ///   - categories/relationships: 충돌 시 ignore (기존 항목 유지)
   Future<int> importBackup(Map<String, dynamic> data) async {
-    if (data['app'] != 'sangbu-sangjo') {
-      throw const FormatException('상부상조 백업 파일이 아닙니다');
-    }
+    BackupFormat.validate(data);
     final db = await _database;
     var restored = 0;
     await db.transaction((txn) async {
@@ -535,16 +581,9 @@ class LocalStore {
                 : r['category'],
         r['event_type'],
         r['memo'],
-      ].map(_csvCell).join(','));
+      ].map(spreadsheetCsvCell).join(','));
     }
     return buf.toString();
   }
 
-  static String _csvCell(Object? v) {
-    final s = (v ?? '').toString();
-    if (s.contains(',') || s.contains('"') || s.contains('\n')) {
-      return '"${s.replaceAll('"', '""')}"';
-    }
-    return s;
-  }
 }

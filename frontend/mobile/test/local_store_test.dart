@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart' hide Transaction;
 
 import 'package:sangbu_sangjo/data/local_store.dart';
+import 'package:sangbu_sangjo/data/ledger_import.dart';
 import 'package:sangbu_sangjo/models/analytics.dart';
 import 'package:sangbu_sangjo/models/category.dart';
 import 'package:sangbu_sangjo/models/relationship.dart';
@@ -27,6 +29,22 @@ void main() {
   });
 
   final store = LocalStore.instance;
+
+  test('미리보기는 기록을 쓰지 않고, 저장 시점에 중복을 다시 확인한다', () async {
+    final cats = (await store.listCategories()).map(Category.fromJson).toList();
+    final rows = LedgerImport.parse(Uint8List.fromList(utf8.encode(
+      '${LedgerImport.template}2026-11-26,합성,500,받음,,\n'
+      '2026-11-26,다른 사람,600,보냄,,\n2026-11-26,합성,0,받음,,',
+    )), 'csv', cats, await store.existingLedgerKeys());
+    expect((await store.listTransactions())['total'], 0);
+    await store.createTransaction(categoryId: 'sys-15', amount: 500,
+      type: 'income', transactionDate: '2026-11-26', counterpartyName: '합성');
+    final skip = await store.importLedger(rows, skipDuplicates: true);
+    expect(skip, (added: 1, skipped: 1, invalid: 1));
+    final keep = await store.importLedger(rows, skipDuplicates: false);
+    expect(keep, (added: 2, skipped: 0, invalid: 1));
+    expect((await store.listTransactions())['total'], 4);
+  });
 
   String today() {
     final now = DateTime.now();

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -9,10 +8,13 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/file_download.dart';
+import '../../core/import_file.dart';
+import '../../data/backup_format.dart';
 import '../../data/local_store.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/delayed_spinner.dart';
+import 'ledger_import_screen.dart';
 
 /// 데이터 백업/복원 화면 (로컬 모드 전용).
 /// - 전체 백업(JSON): 재설치·기기변경 대비 복원 가능한 파일
@@ -94,15 +96,24 @@ class _BackupScreenState extends State<BackupScreen> {
   }
 
   Future<void> _importJson() async {
-    final picked = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-      withData: kIsWeb,
-    );
-    final file = picked?.files.single;
-    // 웹은 경로가 없고 내용(bytes)만 온다.
-    if (file == null || (kIsWeb ? file.bytes == null : file.path == null) || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await _restoreSelectedBackup();
+    } on FormatException catch (e) {
+      _snack(e.message, error: true);
+    } catch (_) {
+      _snack('복원하지 못했어요. 백업 파일을 확인하고 다시 시도해 주세요.', error: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
+  Future<void> _restoreSelectedBackup() async {
+    final file = await pickImportFile(['json']);
+    if (file == null || !mounted) return;
+    final bytes = await readImportFile(file, BackupFormat.maxBytes, BackupFormat.tooLarge);
+    final data = BackupFormat.decode(bytes);
+    if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -127,20 +138,11 @@ class _BackupScreenState extends State<BackupScreen> {
     // async gap 전에 context 의존 객체를 미리 확보
     final auth = context.read<AuthProvider>();
     final navigator = Navigator.of(context);
-    setState(() => _busy = true);
-    try {
-      final content = kIsWeb ? utf8.decode(file.bytes!) : await File(file.path!).readAsString();
-      final data = jsonDecode(content) as Map<String, dynamic>;
-      final count = await LocalStore.instance.importBackup(data);
-      await auth.fetchMe();
-      if (!mounted) return;
-      _snack('기록 $count건을 복원했어요.');
-      navigator.pushNamedAndRemoveUntil('/home', (_) => false);
-    } catch (e) {
-      _snack('복원 실패: 올바른 상부상조 백업 파일인지 확인하세요', error: true);
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    final count = await LocalStore.instance.importBackup(data);
+    await auth.fetchMe();
+    if (!mounted) return;
+    _snack('기록 $count건을 복원했어요.');
+    navigator.pushNamedAndRemoveUntil('/home', (_) => false);
   }
 
   @override
@@ -176,10 +178,22 @@ class _BackupScreenState extends State<BackupScreen> {
               const SizedBox(height: 16),
               _Section(title: '가져오기', children: [
                 _ActionTile(
+                  icon: Icons.playlist_add_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                  title: '엑셀·CSV로 기록 추가하기',
+                  subtitle: '한꺼번에 추가할 기록과 중복·오류를 먼저 확인',
+                  onTap: _busy ? null : () async {
+                    await Navigator.push<void>(context, MaterialPageRoute(
+                      builder: (_) => const LedgerImportScreen(),
+                    ));
+                  },
+                ),
+                const Divider(height: 1),
+                _ActionTile(
                   icon: Icons.restore_outlined,
                   color: Theme.of(context).colorScheme.primary,
                   title: '백업 파일로 복원하기',
-                  subtitle: '내보낸 백업(.json)을 선택해 복원',
+                  subtitle: '8MB 이하의 백업(.json) · 최대 20,000개 항목',
                   onTap: _busy ? null : _importJson,
                 ),
               ]),
